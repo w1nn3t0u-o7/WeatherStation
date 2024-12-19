@@ -18,10 +18,10 @@ namespace CPPBME280
         CPPSPI::Spi *spi;
 
     protected:
-        esp_err_t writeByteData(const uint8_t reg, const uint8_t value);
-        int readByteData(const uint8_t reg);
-        int readWordData(const uint8_t reg);
-        esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length);
+        esp_err_t writeByteData(const uint8_t reg, const uint8_t value) override;
+        int readByteData(const uint8_t reg) override;
+        int readWordData(const uint8_t reg) override;
+        esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length) override;
 
     public:
         esp_err_t InitSpi(CPPSPI::Spi *i_spi, const int ss);

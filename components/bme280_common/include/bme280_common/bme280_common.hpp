@@ -103,10 +103,10 @@ namespace CPPBME280
         int compensateHumidity(const unsigned long adc_H);
 
     protected:
-        virtual esp_err_t writeByteData(const uint8_t reg, const uint8_t value);
-        virtual int readByteData(const uint8_t reg);
-        virtual int readWordData(const uint8_t reg);
-        virtual esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length);
+        virtual esp_err_t writeByteData(const uint8_t reg, const uint8_t value) = 0;
+        virtual int readByteData(const uint8_t reg) = 0;
+        virtual int readWordData(const uint8_t reg) = 0;
+        virtual esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length) = 0; //?????
         
     public:
         struct BME280ResultData
