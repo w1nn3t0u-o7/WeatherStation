@@ -1,4 +1,4 @@
-#include "CPPI2C/cppi2c.hpp"
+#include "i2c.hpp"
 
 namespace CPPI2C
 {

@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "CPPSPI/cppspi.hpp"
-#include "CPPI2C/cppi2c.hpp"
-#include "bme280_spi/bme280_spi.hpp"
-#include "bme280_i2c/bme280_i2c.hpp"
+#include "spi.hpp"
+#include "i2c.hpp"
+#include "bme280_spi.hpp"
+#include "bme280_i2c.hpp"
 
 constexpr static int SPI_3_MISO = 19;
 constexpr static int SPI_3_MOSI = 23;

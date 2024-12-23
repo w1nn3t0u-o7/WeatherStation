@@ -1,5 +1,5 @@
 #include <memory>
-#include "bme280_common/bme280_common.hpp"
+#include "bme280_common.hpp"
 
 namespace CPPBME280
 {
@@ -42,12 +42,12 @@ namespace CPPBME280
         return 0;
     }
 
-    int BME280::getSensorData(SensorRawData *resultRaw)
+    int BME280::getSensorData(m_sensor_raw_data *resultRaw)
     {
         esp_err_t status = ESP_OK;
         std::unique_ptr<uint8_t[]> buff = std::make_unique<uint8_t[]>(8);
 
-        if (_sensorModeValue == sensorForcedMode)
+        if (m_sensorModeValue == sensorForcedMode)
         {
             SetMode(sensorForcedMode);
             while (StatusMeasuringBusy() || ImUpdateBusy())
@@ -67,9 +67,9 @@ namespace CPPBME280
         uint8_t humMsb = buff[6];
         uint8_t humLsb = buff[7];
 
-        resultRaw->temperature = tempMsb << 12 | tempLsb << 4 | tempXlsb >> 4;
-        resultRaw->pressure = pressMsb << 12 | pressLsb << 4 | pressXlsb >> 4;
-        resultRaw->humididty = humMsb << 8 | humLsb;
+        resultRaw->m_temperature = tempMsb << 12 | tempLsb << 4 | tempXlsb >> 4;
+        resultRaw->m_pressure = pressMsb << 12 | pressLsb << 4 | pressXlsb >> 4;
+        resultRaw->m_humididty = humMsb << 8 | humLsb;
 
         return status;
     }
@@ -189,17 +189,17 @@ namespace CPPBME280
                            const uint8_t pressureOversampling,
                            const uint8_t sensorMode)
     {
-        _humidityOversamplingValue = humidityOversampling;
-        _pressureOversamplingValue = pressureOversampling;
-        _temperatureOversamplingValue = temperatureOversampling;
-        _sensorModeValue = sensorMode;
+        m_humidityOversamplingValue = humidityOversampling;
+        m_pressureOversamplingValue = pressureOversampling;
+        m_temperatureOversamplingValue = temperatureOversampling;
+        m_sensorModeValue = sensorMode;
 
         esp_err_t status = ESP_OK;
 
         status |= writeByteData(CONFIG, 0); // Enable SPI 4-wire
         status |= getCalibrateData();
-        status |= writeByteData(CTRL_HUM, _humidityOversamplingValue);
-        status |= writeByteData(CTRL_MEAS, _pressureOversamplingValue | _temperatureOversamplingValue | _sensorModeValue);
+        status |= writeByteData(CTRL_HUM, m_humidityOversamplingValue);
+        status |= writeByteData(CTRL_MEAS, m_pressureOversamplingValue | m_temperatureOversamplingValue | m_sensorModeValue);
 
         return status;
     }
@@ -232,9 +232,9 @@ namespace CPPBME280
 
     esp_err_t BME280::SetCtrlMeas(const uint8_t ctrlMeas)
     {
-        _pressureOversamplingValue = 0 | (ctrlMeas & 0b11100011);
-        _temperatureOversamplingValue = 0 | (ctrlMeas & 0b00011111);
-        _sensorModeValue = 0 | (ctrlMeas & 0b11111100);
+        m_pressureOversamplingValue = 0 | (ctrlMeas & 0b11100011);
+        m_temperatureOversamplingValue = 0 | (ctrlMeas & 0b00011111);
+        m_sensorModeValue = 0 | (ctrlMeas & 0b11111100);
 
         return writeByteData(CTRL_MEAS, ctrlMeas);
     }
@@ -242,7 +242,7 @@ namespace CPPBME280
     esp_err_t BME280::SetTemperatureOversampling(const uint8_t tempOversampling) // ctrl_meas bits 7, 6, 5   page 29
     {
         uint8_t temp = readByteData(CTRL_MEAS) & 0b00011111;
-        _temperatureOversamplingValue = tempOversampling;
+        m_temperatureOversamplingValue = tempOversampling;
 
         return writeByteData(CTRL_MEAS, temp | tempOversampling);
     }
@@ -250,30 +250,30 @@ namespace CPPBME280
     esp_err_t BME280::SetPressureOversampling(const uint8_t pressureOversampling) // ctrl_meas bits 4, 3, 2
     {
         uint8_t temp = readByteData(CTRL_MEAS) & 0b11100011;
-        _pressureOversamplingValue = pressureOversampling;
+        m_pressureOversamplingValue = pressureOversampling;
 
         return writeByteData(CTRL_MEAS, temp | pressureOversampling);
     }
 
     esp_err_t BME280::SetOversampling(const uint8_t tempOversampling, const uint8_t pressureOversampling)
     {
-        _pressureOversamplingValue = 0 | pressureOversampling;
-        _temperatureOversamplingValue = 0 | tempOversampling;
+        m_pressureOversamplingValue = 0 | pressureOversampling;
+        m_temperatureOversamplingValue = 0 | tempOversampling;
 
-        return writeByteData(CTRL_MEAS, tempOversampling | pressureOversampling | _sensorModeValue);
+        return writeByteData(CTRL_MEAS, tempOversampling | pressureOversampling | m_sensorModeValue);
     }
 
     esp_err_t BME280::SetMode(const uint8_t mode) // ctrl_meas bits 1, 0
     {
         uint8_t temp = readByteData(CTRL_MEAS) & 0b11111100;
-        _sensorModeValue = mode;
+        m_sensorModeValue = mode;
 
         return writeByteData(CTRL_MEAS, temp | mode);
     }
 
     esp_err_t BME280::SetCtrlHum(const int humididtyOversampling) // ctrl_hum bits 2, 1, 0    page 28
     {
-        _humidityOversamplingValue = humididtyOversampling;
+        m_humidityOversamplingValue = humididtyOversampling;
         
         return writeByteData(CTRL_HUM, humididtyOversampling);
     }
@@ -281,13 +281,13 @@ namespace CPPBME280
     esp_err_t BME280::GetAllResults(BME280ResultData *results)
     {
         esp_err_t status = ESP_OK;
-        SensorRawData resultRaw{};
+        m_sensor_raw_data resultRaw{};
 
         status = getSensorData(&resultRaw);
 
-        results->temperature = compensateTemp(resultRaw.temperature);
-        results->humididty = compensateHumidity(resultRaw.humididty);
-        results->pressure = compensatePressure(resultRaw.pressure);
+        results->temperature = compensateTemp(resultRaw.m_temperature);
+        results->humididty = compensateHumidity(resultRaw.m_humididty);
+        results->pressure = compensatePressure(resultRaw.m_pressure);
 
         return status;
     }
@@ -295,13 +295,13 @@ namespace CPPBME280
     esp_err_t BME280::GetAllResults(float *temperature, int *humidity, float *pressure)
     {
         esp_err_t status = ESP_OK;
-        SensorRawData resultRaw{};
+        m_sensor_raw_data resultRaw{};
 
         status = getSensorData(&resultRaw);
 
-        *temperature = compensateTemp(resultRaw.temperature);
-        *humidity = compensateHumidity(resultRaw.humididty);
-        *pressure = compensatePressure(resultRaw.pressure);
+        *temperature = compensateTemp(resultRaw.m_temperature);
+        *humidity = compensateHumidity(resultRaw.m_humididty);
+        *pressure = compensatePressure(resultRaw.m_pressure);
 
         return status;
     }

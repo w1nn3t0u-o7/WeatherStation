@@ -1,7 +1,7 @@
 #pragma once
 
-#include "bme280_common/bme280_common.hpp"
-#include "CPPSPI/cppspi.hpp"
+#include "bme280_common.hpp"
+#include "spi.hpp"
 
 namespace CPPBME280
 {

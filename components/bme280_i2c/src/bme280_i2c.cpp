@@ -1,4 +1,4 @@
-#include "bme280_i2c/bme280_i2c.hpp"
+#include "bme280_i2c.hpp"
 
 namespace CPPBME280
 {

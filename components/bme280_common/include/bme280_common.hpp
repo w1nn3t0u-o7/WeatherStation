@@ -62,17 +62,17 @@ namespace CPPBME280
         constexpr static uint8_t humidityOversamplingX16 = 0x05;
 
     private:
-        struct SensorRawData
+        struct m_sensor_raw_data
         {
-            long temperature = 0;
-            unsigned long humididty = 0;
-            unsigned long pressure = 0;
+            long m_temperature = 0;
+            unsigned long m_humididty = 0;
+            unsigned long m_pressure = 0;
         };
 
-        uint8_t _humidityOversamplingValue = humidityOversamplingX1;    // Default to 1X over sampling
-        uint8_t _pressureOversamplingValue = pressureOversamplingX1;    // Default to 1X over sampling
-        uint8_t _temperatureOversamplingValue = temperatureOversamplingX1; // Default to 1X over sampling
-        uint8_t _sensorModeValue = sensorForcedMode;              // Default to forced mode
+        uint8_t m_humidityOversamplingValue = humidityOversamplingX1;    // Default to 1X over sampling
+        uint8_t m_pressureOversamplingValue = pressureOversamplingX1;    // Default to 1X over sampling
+        uint8_t m_temperatureOversamplingValue = temperatureOversamplingX1; // Default to 1X over sampling
+        uint8_t m_sensorModeValue = sensorForcedMode;              // Default to forced mode
 
         // Calibration Data
         unsigned short  dig_t1 = 0;
@@ -97,7 +97,7 @@ namespace CPPBME280
 
         int getStatus();
         int getCalibrateData();
-        int getSensorData(SensorRawData *resultRaw);
+        int getSensorData(m_sensor_raw_data *resultRaw);
         float compensateTemp(const signed long adc_T);
         float compensatePressure(const unsigned long adc_P);
         int compensateHumidity(const unsigned long adc_H);

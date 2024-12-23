@@ -1,7 +1,7 @@
 #pragma once
 
-#include "bme280_common/bme280_common.hpp"
-#include "CPPI2C/cppi2c.hpp"
+#include "bme280_common.hpp"
+#include "i2c.hpp"
 
 namespace CPPBME280
 {

@@ -1,4 +1,4 @@
-#include "bme280_spi/bme280_spi.hpp"
+#include "bme280_spi.hpp"
 
 namespace CPPBME280
 {

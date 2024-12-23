@@ -1,7 +1,6 @@
 #pragma once
 
 #include "driver/i2c.h"
-#include "esp_intr_alloc.h"
 
 namespace CPPI2C
 {
