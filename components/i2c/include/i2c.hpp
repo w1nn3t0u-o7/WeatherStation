@@ -2,7 +2,7 @@
 
 #include "driver/i2c.h"
 
-namespace CPPI2C
+namespace MZDK
 {
     class I2c
     {

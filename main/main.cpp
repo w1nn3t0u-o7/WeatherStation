@@ -14,13 +14,13 @@ constexpr static int I2C_SDA = 17;
 constexpr static int I2C_SCL = 16;
 constexpr static uint32_t I2C_CLK_SPEED_HZ = 400000;
 
-CPPI2C::I2c i2c {I2C_NUM_0};
-CPPSPI::Spi spi3;
+MZDK::I2c i2c {I2C_NUM_0};
+MZDK::Spi spi3;
 
 extern "C" void app_main(void)
 {    
-    CPPBME280::BME280SPI bme280spi;
-    CPPBME280::BME280I2C bme280i2c;
+    MZDK::BME280SPI bme280spi;
+    MZDK::BME280I2C bme280i2c;
 
     // Initialise the I2C
     i2c.InitMaster(I2C_SDA, I2C_SCL, I2C_CLK_SPEED_HZ, true, true);

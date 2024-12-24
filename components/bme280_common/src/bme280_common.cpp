@@ -1,7 +1,7 @@
 #include <memory>
 #include "bme280_common.hpp"
 
-namespace CPPBME280
+namespace MZDK
 {
     int BME280::getStatus()
     {
@@ -42,7 +42,7 @@ namespace CPPBME280
         return 0;
     }
 
-    int BME280::getSensorData(m_sensor_raw_data *resultRaw)
+    int BME280::getSensorData(mSensorRawData *resultRaw)
     {
         esp_err_t status = ESP_OK;
         std::unique_ptr<uint8_t[]> buff = std::make_unique<uint8_t[]>(8);
@@ -281,7 +281,7 @@ namespace CPPBME280
     esp_err_t BME280::GetAllResults(BME280ResultData *results)
     {
         esp_err_t status = ESP_OK;
-        m_sensor_raw_data resultRaw{};
+        mSensorRawData resultRaw{};
 
         status = getSensorData(&resultRaw);
 
@@ -295,7 +295,7 @@ namespace CPPBME280
     esp_err_t BME280::GetAllResults(float *temperature, int *humidity, float *pressure)
     {
         esp_err_t status = ESP_OK;
-        m_sensor_raw_data resultRaw{};
+        mSensorRawData resultRaw{};
 
         status = getSensorData(&resultRaw);
 

@@ -1,6 +1,6 @@
 #include "i2c.hpp"
 
-namespace CPPI2C
+namespace MZDK
 {
     I2c::I2c(i2c_port_t port, size_t slv_rx_buf_len, size_t slv_tx_buf_len, int intr_alloc_flags)
     {

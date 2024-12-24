@@ -3,7 +3,7 @@
 #include "bme280_common.hpp"
 #include "spi.hpp"
 
-namespace CPPBME280
+namespace MZDK
 {
     constexpr static uint8_t MODE = 0;
     constexpr static uint8_t ADDR_BITS = 7;
@@ -15,7 +15,7 @@ namespace CPPBME280
     class BME280SPI : public BME280
     {
     private:
-        CPPSPI::Spi *spi;
+        MZDK::Spi *spi;
 
     protected:
         esp_err_t writeByteData(const uint8_t reg, const uint8_t value) override;
@@ -24,6 +24,6 @@ namespace CPPBME280
         esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length) override;
 
     public:
-        esp_err_t InitSpi(CPPSPI::Spi *i_spi, const int ss);
+        esp_err_t InitSpi(MZDK::Spi *i_spi, const int ss);
     }; // namespace CPPBME280
 }

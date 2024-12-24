@@ -3,7 +3,7 @@
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 
-namespace CPPSPI
+namespace MZDK
 {
     class Spi
     {

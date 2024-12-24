@@ -1,6 +1,6 @@
 #include "bme280_i2c.hpp"
 
-namespace CPPBME280
+namespace MZDK
 {
     esp_err_t BME280I2C::writeByteData(const uint8_t reg, const uint8_t value)
     {
@@ -24,7 +24,7 @@ namespace CPPBME280
         return i2c->ReadRegisterMultipleBytes(_devAddress, reg, buf, length);
     }
 
-    void BME280I2C::InitI2c(CPPI2C::I2c *i_i2c, const uint8_t dev_addr)
+    void BME280I2C::InitI2c(MZDK::I2c *i_i2c, const uint8_t dev_addr)
     {
         i2c = i_i2c;
         _devAddress = dev_addr;

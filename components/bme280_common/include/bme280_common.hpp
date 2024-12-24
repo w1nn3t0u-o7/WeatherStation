@@ -3,7 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-namespace CPPBME280
+namespace MZDK
 {
     class BME280
     {
@@ -62,7 +62,7 @@ namespace CPPBME280
         constexpr static uint8_t humidityOversamplingX16 = 0x05;
 
     private:
-        struct m_sensor_raw_data
+        struct mSensorRawData
         {
             long m_temperature = 0;
             unsigned long m_humididty = 0;
@@ -97,7 +97,7 @@ namespace CPPBME280
 
         int getStatus();
         int getCalibrateData();
-        int getSensorData(m_sensor_raw_data *resultRaw);
+        int getSensorData(mSensorRawData *resultRaw);
         float compensateTemp(const signed long adc_T);
         float compensatePressure(const unsigned long adc_P);
         int compensateHumidity(const unsigned long adc_H);

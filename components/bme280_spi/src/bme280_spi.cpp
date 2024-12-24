@@ -1,6 +1,6 @@
 #include "bme280_spi.hpp"
 
-namespace CPPBME280
+namespace MZDK
 {
     esp_err_t BME280SPI::writeByteData(const uint8_t reg, const uint8_t value)
     {
@@ -24,7 +24,7 @@ namespace CPPBME280
         return spi->ReadRegisterMultipleBytes(reg, buf, length, SPI_READ);
     }
 
-    esp_err_t BME280SPI::InitSpi(CPPSPI::Spi *i_spi, const int ss)
+    esp_err_t BME280SPI::InitSpi(MZDK::Spi *i_spi, const int ss)
     {
         spi = i_spi;
 

@@ -1,6 +1,6 @@
 #include "spi.hpp"
 
-namespace CPPSPI
+namespace MZDK
 {
     esp_err_t Spi::transferByte(const uint8_t reg_addr, const uint8_t data, const uint8_t command)
     {
