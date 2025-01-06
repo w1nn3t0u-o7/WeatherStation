@@ -1,5 +1,2 @@
-set(SOURCES src/i2c.cpp)
-            
-idf_component_register(SRCS ${SOURCES}
-                    REQUIRES driver
-                    INCLUDE_DIRS include)
+idf_component_register(SRCS i2c.cpp
+                    INCLUDE_DIRS . )

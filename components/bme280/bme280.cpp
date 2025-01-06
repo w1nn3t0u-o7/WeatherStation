@@ -1,5 +1,5 @@
 #include <memory>
-#include "bme280_common.hpp"
+#include "bme280.hpp"
 
 namespace MZDK
 {
