@@ -2,17 +2,18 @@
 
 #include "registers.hpp"
 
-class GPIO {
-public:
-    enum class Direction { INPUT, OUTPUT };
+enum class Direction { INPUT, OUTPUT };
 
-    GPIO();
-    GPIO(int pin, Direction direction);
+namespace MZDK {
+    class GPIO {
+    private:
+        int m_pin;
+        Direction m_direction;
+    public:
+        GPIO();
+        GPIO(int pin, Direction direction);
 
-    void write(bool value);
-    bool read();
-
-private:
-    int pin;
-    Direction direction;
-};
+        void write(bool value);
+        bool read();
+    };
+}
