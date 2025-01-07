@@ -1,8 +1,6 @@
 #pragma once
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
+#include "com_protocols.hpp"
 namespace MZDK
 {
     class BME280
@@ -103,10 +101,10 @@ namespace MZDK
         int compensateHumidity(const unsigned long adc_H);
 
     protected:
-        virtual esp_err_t writeByteData(const uint8_t reg, const uint8_t value) = 0;
+        virtual int writeByteData(const uint8_t reg, const uint8_t value) = 0;
         virtual int readByteData(const uint8_t reg) = 0;
         virtual int readWordData(const uint8_t reg) = 0;
-        virtual esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length) = 0; //?????
+        virtual int readBlockData(const uint8_t reg, uint8_t *buf, const int length) = 0; //?????
         
     public:
         struct BME280ResultData
@@ -116,28 +114,28 @@ namespace MZDK
             float pressure = 0.0;
         } results;
 
-        esp_err_t Init(const uint8_t humidityOversampling = humidityOversamplingX1,
+        int Init(const uint8_t humidityOversampling = humidityOversamplingX1,
                        const uint8_t temperatureOversampling = temperatureOversamplingX1,
                        const uint8_t pressureOversampling = pressureOversamplingX1,
                        const uint8_t sensorMode = sensorForcedMode);
         //esp_err_t Close(void);
         int GetDeviceID(void);
-        esp_err_t SetConfig(const uint8_t config);
-        esp_err_t SetConfigStandbyT(const uint8_t standby);   // config bits 7, 6, 5  page 30
-        esp_err_t SetConfigFilter(const uint8_t filter);      // config bits 4, 3, 2
-        esp_err_t SetCtrlMeas(const uint8_t ctrlMeas);
-        esp_err_t SetTemperatureOversampling(const uint8_t tempOversampling);     // ctrl_meas bits 7, 6, 5   page 29
-        esp_err_t SetPressureOversampling(const uint8_t pressureOversampling);    // ctrl_meas bits 4, 3, 2
-        esp_err_t SetOversampling(const uint8_t tempOversampling, const uint8_t pressureOversampling);
-        esp_err_t SetMode(const uint8_t mode);                                    // ctrl_meas bits 1, 0
-        esp_err_t SetCtrlHum(const int humididtyOversampling);                    // ctrl_hum bits 2, 1, 0    page 28
-        esp_err_t GetAllResults(BME280ResultData *results);
-        esp_err_t GetAllResults(float *temperature, int *humidity, float *pressure);
+        int SetConfig(const uint8_t config);
+        int SetConfigStandbyT(const uint8_t standby);   // config bits 7, 6, 5  page 30
+        int SetConfigFilter(const uint8_t filter);      // config bits 4, 3, 2
+        int SetCtrlMeas(const uint8_t ctrlMeas);
+        int SetTemperatureOversampling(const uint8_t tempOversampling);     // ctrl_meas bits 7, 6, 5   page 29
+        int SetPressureOversampling(const uint8_t pressureOversampling);    // ctrl_meas bits 4, 3, 2
+        int SetOversampling(const uint8_t tempOversampling, const uint8_t pressureOversampling);
+        int SetMode(const uint8_t mode);                                    // ctrl_meas bits 1, 0
+        int SetCtrlHum(const int humididtyOversampling);                    // ctrl_hum bits 2, 1, 0    page 28
+        int GetAllResults(BME280ResultData *results);
+        int GetAllResults(float *temperature, int *humidity, float *pressure);
         float GetTemperature(void);    // Preferable to use GetAllResults()
         float GetPressure(void);       
         int GetHumidity(void);       
         bool StatusMeasuringBusy(void); // check status (0xF3) bit 3
         bool ImUpdateBusy(void);        // check status (0xF3) bit 0
-        esp_err_t Reset(void);                // write 0xB6 into reset (0xE0)
+        int Reset(void);                // write 0xB6 into reset (0xE0)
     };
 } // namespace CPPBME280

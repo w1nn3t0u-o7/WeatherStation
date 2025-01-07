@@ -37,6 +37,6 @@
 #define SYS_TIMER_COUNT_HIGH (SYS_TIMER_BASE + 0x28)
 
 // Dostęp do rejestrów pamięci
-volatile uint32_t* reg(uint32_t address) {
+static volatile uint32_t* reg(uint32_t address) {
     return reinterpret_cast<volatile uint32_t*>(address);
 }
