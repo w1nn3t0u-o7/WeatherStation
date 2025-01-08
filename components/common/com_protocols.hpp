@@ -1,12 +1,16 @@
 #pragma once
 
-#include "registers.hpp"
 #include "soc/soc.h"
+
 namespace MZDK {
 class ComProtocol {
 public:
+    uint8_t *rx_buf{};
+
     virtual int write(uint8_t addr, uint8_t *data, size_t len) = 0;
     virtual int read(uint8_t addr, uint8_t *data, size_t len) = 0;
+    virtual int writeRegister(uint8_t deviceAddr, uint8_t regAddr, uint8_t value) = 0;
+    virtual int readRegister(uint8_t deviceAddr, uint8_t regAddr, uint8_t *value) = 0;
     virtual ~ComProtocol() {}
 };
 

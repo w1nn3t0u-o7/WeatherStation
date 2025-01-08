@@ -2,6 +2,21 @@
 
 #include "com_protocols.hpp"
 
+// Registers
+constexpr static uint8_t HUM_LSB = 0xFE;
+constexpr static uint8_t HUM_MSB = 0xFD;
+constexpr static uint8_t TEMP_XLSB = 0xFC;
+constexpr static uint8_t TEMP_LSB = 0xFB;
+constexpr static uint8_t TEMP_MSB = 0xFA;
+constexpr static uint8_t PRESS_XLSB = 0xF9;
+constexpr static uint8_t PRESS_LSB = 0xF8;
+constexpr static uint8_t PRESS_MSB = 0xF7;
+constexpr static uint8_t CONFIG = 0xF5;
+constexpr static uint8_t CTRL_MEAS = 0xF4;
+constexpr static uint8_t STATUS = 0xF3;
+constexpr static uint8_t CTRL_HUM = 0xF2;
+constexpr static uint8_t RESET = 0xE0;
+constexpr static uint8_t ID = 0xD0;
 // Settings
 constexpr static uint8_t pressureSensorDisable = 0x00 << 2;
 constexpr static uint8_t pressureOversamplingX1 = 0x01 << 2;
@@ -44,6 +59,7 @@ namespace MZDK {
     class BME280 {
     private:
         ComProtocol *com_protocol;
+        uint8_t m_dev_address = 0x77;
 
         struct mSensorRawData
         {

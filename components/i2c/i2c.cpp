@@ -67,3 +67,56 @@ int MZDK::I2C::read(uint8_t addr, uint8_t *data, size_t len) {
     m_stop();
     return 0;
 }
+
+// New function to write to a device register
+int MZDK::I2C::writeRegister(uint8_t deviceAddr, uint8_t regAddr, uint8_t value) {
+    m_start();
+    REG_WRITE(I2C_DATA_REG(m_port), (deviceAddr << 1) | I2C_MASTER_WRITE);
+    if (m_validateAck() != 0) {
+        m_stop();
+        return 1;
+    }
+
+    REG_WRITE(I2C_DATA_REG(m_port), regAddr);
+    if (m_validateAck() != 0) {
+        m_stop();
+        return 1;
+    }
+
+    REG_WRITE(I2C_DATA_REG(m_port), value);
+    if (m_validateAck() != 0) {
+        m_stop();
+        return 1;
+    }
+
+    m_stop();
+    return 0;
+}
+
+// New function to read from a device register
+int MZDK::I2C::readRegister(uint8_t deviceAddr, uint8_t regAddr, uint8_t *value) {
+    m_start();
+    REG_WRITE(I2C_DATA_REG(m_port), (deviceAddr << 1) | I2C_MASTER_WRITE);
+    if (m_validateAck() != 0) {
+        m_stop();
+        return 1;
+    }
+
+    REG_WRITE(I2C_DATA_REG(m_port), regAddr);
+    if (m_validateAck() != 0) {
+        m_stop();
+        return 1;
+    }
+
+    m_start();
+    REG_WRITE(I2C_DATA_REG(m_port), (deviceAddr << 1) | I2C_MASTER_READ);
+    if (m_validateAck() != 0) {
+        m_stop();
+        return 1;
+    }
+
+    *value = REG_READ(I2C_DATA_REG(m_port));
+    m_stop();
+    return 0;
+}
+

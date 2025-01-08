@@ -7,10 +7,10 @@ MZDK::BME280::BME280(ComProtocol *com_protocol) {
     m_pressure_oversampling = pressureOversamplingX1;
     m_sensor_mode = sensorForcedMode;
 
-    com_protocol->write(CONFIG, 0, 1); // Enable SPI 4-wire
+    com_protocol->writeRegister(m_dev_address, CONFIG, 0); // Enable SPI 4-wire
     getCalibrateData();
-    com_protocol->write(CTRL_HUM, m_humidity_oversampling, 1);
-    com_protocol->write(CTRL_MEAS, m_pressure_oversampling | m_temperature_oversampling | m_sensor_mode, 1);
+    com_protocol->writeRegister(m_dev_address, CTRL_HUM, m_humidity_oversampling);
+    com_protocol->writeRegister(m_dev_address,CTRL_MEAS, m_pressure_oversampling | m_temperature_oversampling | m_sensor_mode);
 }
 MZDK::BME280::BME280(ComProtocol *com_protocol, uint8_t humidity_oversampling, uint8_t temperature_oversampling, uint8_t pressure_oversampling, uint8_t sensor_mode) :
                     m_humidity_oversampling(humidity_oversampling), 
@@ -18,15 +18,15 @@ MZDK::BME280::BME280(ComProtocol *com_protocol, uint8_t humidity_oversampling, u
                     m_pressure_oversampling(pressure_oversampling),
                     m_sensor_mode(sensor_mode) {
 
-    com_protocol->write(CONFIG, 0, 1); // Enable SPI 4-wire
+    com_protocol->writeRegister(m_dev_address, CONFIG, 0); // Enable SPI 4-wire
     getCalibrateData();
-    com_protocol->write(CTRL_HUM, m_humidity_oversampling, 1);
-    com_protocol->write(CTRL_MEAS, m_pressure_oversampling | m_temperature_oversampling | m_sensor_mode, 1);
+    com_protocol->writeRegister(m_dev_address, CTRL_HUM, m_humidity_oversampling);
+    com_protocol->writeRegister(m_dev_address, CTRL_MEAS, m_pressure_oversampling | m_temperature_oversampling | m_sensor_mode);
 
 }
 
     int MZDK::BME280::getStatus() {
-        return (STATUS);
+        return com_protocol->readRegister(m_dev_address, STATUS, com_protocol->rx_buf);
     }
 
     int MZDK::BME280::getCalibrateData() {

@@ -19,5 +19,7 @@ public:
 
     int write(uint8_t addr, uint8_t* data, size_t len) override;
     int read(uint8_t addr, uint8_t* data, size_t len) override;
+    int writeRegister(uint8_t deviceAddr, uint8_t regAddr, uint8_t value) override;
+    int readRegister(uint8_t deviceAddr, uint8_t regAddr, uint8_t *value) override;
 };
 }
