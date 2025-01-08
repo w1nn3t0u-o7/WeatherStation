@@ -106,11 +106,6 @@ namespace MZDK {
             float pressure = 0.0;
         } results;
 
-        int Init(const uint8_t humidityOversampling = humidityOversamplingX1,
-                       const uint8_t temperatureOversampling = temperatureOversamplingX1,
-                       const uint8_t pressureOversampling = pressureOversamplingX1,
-                       const uint8_t sensorMode = sensorForcedMode);
-
         int GetDeviceID(void);
         int SetConfig(const uint8_t config);
         int SetConfigStandbyT(const uint8_t standby);   // config bits 7, 6, 5  page 30

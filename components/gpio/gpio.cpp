@@ -1,104 +1,73 @@
 #include "gpio.hpp"
 
-MZDK::GPIO::GPIO() : m_pin(-1), m_direction(INPUT) {}
+MZDK::GPIO::GPIO(int pin, GpioMode mode = GPIO_MODE_OUTPUT, GpioPullMode pull = GPIO_PULL_NONE) : m_pin(pin) {
+    if (pin < 0 || pin > 39) {
+        throw std::invalid_argument("Invalid GPIO pin number");
+    }
+    setMode(mode);
+    setPull(pull);
+}
 
-MZDK::GPIO::GPIO(int pin, Direction direction) : m_pin(pin), m_direction(direction) {
-    if (pin >= 0 && pin < 40) {
-        if (direction == OUTPUT) {
-            *regAccess(GPIO_ENABLE_W1TS_REG) |= BIT(pin);// Wrazie czego zmienić na BIT64
-        } else {
-            *regAccess(GPIO_ENABLE_W1TC_REG) |= BIT(pin);
-        }
+void MZDK::GPIO::setMode(GpioMode mode) {
+    if (mode < GPIO_MODE_DISABLE || mode > GPIO_MODE_INPUT_OUTPUT_OD) {
+        throw std::invalid_argument("Invalid GPIO mode");
+    }
+
+    switch (mode) {
+        case GPIO_MODE_DISABLE:
+            REG_WRITE(GPIO_ENABLE_REG, REG_READ(GPIO_ENABLE_REG) & ~BIT(m_pin));
+            break;
+        case GPIO_MODE_INPUT:
+            REG_WRITE(GPIO_ENABLE_REG, REG_READ(GPIO_ENABLE_REG) & ~BIT(m_pin));
+            break;
+        case GPIO_MODE_OUTPUT:
+            REG_WRITE(GPIO_ENABLE_REG, REG_READ(GPIO_ENABLE_REG) | BIT(m_pin));
+            REG_WRITE(GPIO_REG(m_pin), REG_READ(GPIO_REG(m_pin)) & ~GPIO_PIN_PAD_DRIVER);
+            break;
+        case GPIO_MODE_OUTPUT_OD:
+            REG_WRITE(GPIO_ENABLE_REG, REG_READ(GPIO_ENABLE_REG) | BIT(m_pin));
+            REG_WRITE(GPIO_REG(m_pin), REG_READ(GPIO_REG(m_pin)) | GPIO_PIN_PAD_DRIVER);
+            break;
+        case GPIO_MODE_INPUT_OUTPUT:
+            REG_WRITE(GPIO_ENABLE_REG, REG_READ(GPIO_ENABLE_REG) | BIT(m_pin));
+            REG_WRITE(GPIO_REG(m_pin), REG_READ(GPIO_REG(m_pin)) & ~GPIO_PIN_PAD_DRIVER);
+            break;
+        case GPIO_MODE_INPUT_OUTPUT_OD:
+            REG_WRITE(GPIO_ENABLE_REG, REG_READ(GPIO_ENABLE_REG) | BIT(m_pin));
+            REG_WRITE(GPIO_REG(m_pin), REG_READ(GPIO_REG(m_pin)) | GPIO_PIN_PAD_DRIVER);
+            break;
     }
 }
 
-void MZDK::GPIO::setPullMode(uint32_t reg, bool pull_up, bool pull_down) {
-    uint32_t reg_value = *regAccess(reg);
-    
-    if (pull_up) {
-        reg_value |= FUN_PU;  // Pull-up bit (7)
-    } else {
-        reg_value &= ~FUN_PU;
+void MZDK::GPIO::setPull(GpioPullMode pull) {
+    if (pull < GPIO_PULL_NONE || pull > GPIO_PULL_DOWN) {
+        throw std::invalid_argument("Invalid GPIO pull configuration");
     }
 
-    if (pull_down) {
-        reg_value |= FUN_PD;  // Pull-down bit (6)
-    } else {
-        reg_value &= ~FUN_PD;
-    }
-
-    *regAccess(reg) = reg_value;
-
-}
-
-void MZDK::GPIO::setLevel(Level level) {
-    if (m_direction == OUTPUT) {
-        if (level == HIGH) {
-            *regAccess(GPIO_OUT_W1TS_REG) |= BIT(m_pin);
-        } else {
-            *regAccess(GPIO_OUT_W1TC_REG) |= BIT(m_pin);
-        }
+    switch (pull) {
+        case GPIO_PULL_UP:
+            REG_SET_BIT(GPIO_PIN_MUX_REG[m_pin], FUN_PU);
+            REG_CLR_BIT(GPIO_PIN_MUX_REG[m_pin], FUN_PD);
+            break;
+        case GPIO_PULL_DOWN:
+            REG_CLR_BIT(GPIO_PIN_MUX_REG[m_pin], FUN_PU);
+            REG_SET_BIT(GPIO_PIN_MUX_REG[m_pin], FUN_PD);
+            break;
+        case GPIO_PULL_NONE:
+            REG_CLR_BIT(GPIO_PIN_MUX_REG[m_pin], FUN_PU);
+            REG_CLR_BIT(GPIO_PIN_MUX_REG[m_pin], FUN_PD);
+            break;
     }
 }
 
-bool MZDK::GPIO::readInput() {
-    return (*regAccess(GPIO_IN_REG) >> m_pin) & 0x1;
+void MZDK::GPIO::setHigh() {
+    REG_WRITE(GPIO_OUT_W1TS_REG, BIT(m_pin));
 }
 
-void MZDK::GPIO::enablePullUp() {
-    if (m_direction == INPUT) {
-        if (m_pin < 28 && m_pin > 31) {
-            uint32_t reg = IO_MUX_GPIO_REG[m_pin]; // Pobierz rejestr IO_MUX dla pinu
-            setPullMode(reg, true, false);   // Włącz pull-up
-        } else {
-            std::cout << "Error: This pin doesn't have pullup/pulldown resistor functionality" << std::endl;
-        }
-    }
+void MZDK::GPIO::setLow() {
+    REG_WRITE(GPIO_OUT_W1TC_REG, BIT(m_pin));
 }
 
-void MZDK::GPIO::disablePullUp() {
-    if (m_direction == INPUT) {
-        if (m_pin < 28 && m_pin > 31) {
-            uint32_t reg = IO_MUX_GPIO_REG[m_pin]; // Pobierz rejestr IO_MUX dla pinu
-            setPullMode(reg, false, false);   // Włącz pull-up
-        } else {
-            std::cout << "Error: This pin doesn't have pullup/pulldown resistor functionality" << std::endl;
-        }
-    }
-}
-
-void MZDK::GPIO::enablePullDown() {
-    if (m_direction == INPUT) {
-        if (m_pin < 28 && m_pin > 31) {
-            uint32_t reg = IO_MUX_GPIO_REG[m_pin]; // Pobierz rejestr IO_MUX dla pinu
-            setPullMode(reg, false, true);   // Włącz pull-up
-        } else {
-            std::cout << "Error: This pin doesn't have pullup/pulldown resistor functionality" << std::endl;
-        }
-    }
-}
-
-void MZDK::GPIO::disablePullDown() {
-    if (m_direction == INPUT) {
-        if (m_pin < 28 && m_pin > 31) {
-            uint32_t reg = IO_MUX_GPIO_REG[m_pin]; // Pobierz rejestr IO_MUX dla pinu
-            setPullMode(reg, false, false);   // Włącz pull-up
-        } else {
-            std::cout << "Error: This pin doesn't have pullup/pulldown resistor functionality" << std::endl;
-        }
-    }
-}
-
-void MZDK::GPIO::enableOpenDrainMode() {
-    if (m_direction == INPUT) {
-        uint32_t reg = IO_MUX_GPIO_REG[m_pin]; // Pobierz rejestr IO_MUX dla pinu
-        *regAccess(reg) |= GPIO_PIN_PAD_DRIVER;
-    }
-}
-
-void MZDK::GPIO::disableOpenDrainMode() {
-    if (m_direction == INPUT) {
-        uint32_t reg = IO_MUX_GPIO_REG[m_pin]; // Pobierz rejestr IO_MUX dla pinu
-        *regAccess(reg) &= ~GPIO_PIN_PAD_DRIVER;
-    }
+bool MZDK::GPIO::read() {
+    return (REG_READ(GPIO_IN_REG) & BIT(m_pin)) != 0;
 }

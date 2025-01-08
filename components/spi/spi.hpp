@@ -1,21 +1,23 @@
-#pragma once
-
+#include "soc/spi_reg.h"
 #include "gpio.hpp"
 #include "com_protocols.hpp"
+
 namespace MZDK {
-    class SPI : public ComProtocol {
-    private:
-        GPIO* m_mosi_pin;
-        GPIO* m_miso_pin;
-        GPIO* m_sclk_pin;
-        GPIO* m_cs_pin;
-    public:
-        SPI();// Konstruktor domyślny
+class SPI : public ComProtocol {
+private:
+    int m_port;
+    GPIO m_mosi;
+    GPIO m_miso;
+    GPIO m_sclk;
+    GPIO m_cs;
 
-        SPI(GPIO& mosi_gpio, GPIO& miso_gpio, GPIO& sclk_gpio, GPIO& cs_gpio);
+    void m_reset();
+    int m_validate_transfer();
 
-        void write_byte(uint8_t byte) override;
+public:
+    SPI(int port, int mosi_pin, int miso_pin, int sclk_pin, int cs_pin);
 
-        uint8_t read_byte() override;
-    };
+    int write(uint8_t addr, uint8_t* data, size_t len) override;
+    int read(uint8_t addr, uint8_t* data, size_t len) override;
+};
 }

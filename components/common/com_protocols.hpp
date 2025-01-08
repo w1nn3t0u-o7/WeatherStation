@@ -1,17 +1,18 @@
 #pragma once
 
 #include "registers.hpp"
-
+#include "soc/soc.h"
+namespace MZDK {
 class ComProtocol {
 public:
-    virtual void write_byte(uint8_t byte) = 0;
-    virtual uint8_t read_byte() = 0;
+    virtual int write(uint8_t addr, uint8_t *data, size_t len) = 0;
+    virtual int read(uint8_t addr, uint8_t *data, size_t len) = 0;
     virtual ~ComProtocol() {}
 };
 
 static uint64_t read_sys_timer() {
-    uint32_t low = *reg(SYS_TIMER_COUNT_LOW);
-    uint32_t high = *reg(SYS_TIMER_COUNT_HIGH);
+    uint32_t low = REG_READ(SYS_TIMER_COUNT_LOW);
+    uint32_t high = REG_READ(SYS_TIMER_COUNT_HIGH);
     return ((uint64_t)high << 32) | low;
 }
 
@@ -22,4 +23,5 @@ static void delay_us(uint32_t us) {
     while (read_sys_timer() - start_time < wait_time) {
         // Czekamy na upływ czasu
     }
+}
 }

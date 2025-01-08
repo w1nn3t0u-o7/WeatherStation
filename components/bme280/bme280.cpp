@@ -1,13 +1,35 @@
 #include <memory>
 #include "bme280.hpp"
 
+MZDK::BME280::BME280(ComProtocol *com_protocol) {
+    m_humidity_oversampling = humidityOversamplingX1;
+    m_temperature_oversampling = temperatureOversamplingX1;
+    m_pressure_oversampling = pressureOversamplingX1;
+    m_sensor_mode = sensorForcedMode;
 
-namespace MZDK {
-    int BME280::getStatus() {
-        return readByteData(STATUS);
+    com_protocol->write(CONFIG, 0, 1); // Enable SPI 4-wire
+    getCalibrateData();
+    com_protocol->write(CTRL_HUM, m_humidity_oversampling, 1);
+    com_protocol->write(CTRL_MEAS, m_pressure_oversampling | m_temperature_oversampling | m_sensor_mode, 1);
+}
+MZDK::BME280::BME280(ComProtocol *com_protocol, uint8_t humidity_oversampling, uint8_t temperature_oversampling, uint8_t pressure_oversampling, uint8_t sensor_mode) :
+                    m_humidity_oversampling(humidity_oversampling), 
+                    m_temperature_oversampling(temperature_oversampling),
+                    m_pressure_oversampling(pressure_oversampling),
+                    m_sensor_mode(sensor_mode) {
+
+    com_protocol->write(CONFIG, 0, 1); // Enable SPI 4-wire
+    getCalibrateData();
+    com_protocol->write(CTRL_HUM, m_humidity_oversampling, 1);
+    com_protocol->write(CTRL_MEAS, m_pressure_oversampling | m_temperature_oversampling | m_sensor_mode, 1);
+
+}
+
+    int MZDK::BME280::getStatus() {
+        return (STATUS);
     }
 
-    int BME280::getCalibrateData() {
+    int MZDK::BME280::getCalibrateData() {
         //============================== Temperature Calibration Data ===========================
         dig_t1 = static_cast<unsigned short>(readWordData(0x88));
         dig_t2 = static_cast<signed short>(readWordData(0x8A));
@@ -40,7 +62,7 @@ namespace MZDK {
         return 0;
     }
 
-    int BME280::getSensorData(mSensorRawData *resultRaw) {
+    int MZDK::BME280::getSensorData(mSensorRawData *resultRaw) {
         int status = 0;
         std::unique_ptr<uint8_t[]> buff = std::make_unique<uint8_t[]>(8);
 
@@ -51,7 +73,7 @@ namespace MZDK {
             }
         }
 
-        status = readBlockData(PRESS_MSB, buff.get(), 8);
+        status = com_protocol->read(PRESS_MSB, buff.get(), 8);
 
         uint8_t pressMsb = buff[0];
         uint8_t pressLsb = buff[1];
@@ -69,7 +91,7 @@ namespace MZDK {
         return status;
     }
 
-    float BME280::compensateTemp(const signed long adc_T) {
+    float MZDK::BME280::compensateTemp(const signed long adc_T) {
         int32_t var1;
         int32_t var2;
         int32_t temperature;
@@ -95,7 +117,7 @@ namespace MZDK {
         return returnTemperature / 100;
     }
 
-    float BME280::compensatePressure(const unsigned long adc_P) {
+    float MZDK::BME280::compensatePressure(const unsigned long adc_P) {
         int64_t var1;
         int64_t var2;
         int64_t var3;
@@ -137,7 +159,7 @@ namespace MZDK {
         return returnPressure / 100;
     }
 
-    int BME280::compensateHumidity(const unsigned long adc_H) {
+    int MZDK::BME280::compensateHumidity(const unsigned long adc_H) {
         int32_t var1;
         int32_t var2;
         int32_t var3;
@@ -169,37 +191,21 @@ namespace MZDK {
         return humidity/1024;
     }
 
-    int BME280::Init(const uint8_t humidityOversampling, const uint8_t temperatureOversampling, const uint8_t pressureOversampling, const uint8_t sensorMode) {
-        m_humidity_oversampling = humidityOversampling;
-        m_pressure_oversampling = pressureOversampling;
-        m_temperature_oversampling = temperatureOversampling;
-        m_sensor_mode = sensorMode;
-
-        int status = 0;
-
-        status |= writeByteData(CONFIG, 0); // Enable SPI 4-wire
-        status |= getCalibrateData();
-        status |= writeByteData(CTRL_HUM, m_humidity_oversampling);
-        status |= writeByteData(CTRL_MEAS, m_pressure_oversampling | m_temperature_oversampling | m_sensor_mode);
-
-        return status;
-    }
-
-    int BME280::GetDeviceID() {
+    int MZDK::BME280::GetDeviceID() {
         return readByteData(ID);
     }
 
-    int BME280::SetConfig(const uint8_t config) {
+    int MZDK::BME280::SetConfig(const uint8_t config) {
         return writeByteData(CONFIG, config);
     }
 
-    int BME280::SetConfigStandbyT(const uint8_t standby) { // config bits 7, 6, 5  page 30
+    int MZDK::BME280::SetConfigStandbyT(const uint8_t standby) { // config bits 7, 6, 5  page 30
         uint8_t temp = readByteData(CONFIG) & 0b00011111;
 
         return writeByteData(CONFIG, temp | standby);
     }
 
-    int BME280::SetConfigFilter(const uint8_t filter) { // config bits 4, 3, 2
+    int MZDK::BME280::SetConfigFilter(const uint8_t filter) { // config bits 4, 3, 2
         uint8_t temp = readByteData(CONFIG);
         temp = temp & 0b11100011;
         temp = temp | filter << 2;
@@ -207,7 +213,7 @@ namespace MZDK {
         return writeByteData(CONFIG, temp);
     }
 
-    int BME280::SetCtrlMeas(const uint8_t ctrlMeas) {
+    int MZDK::BME280::SetCtrlMeas(const uint8_t ctrlMeas) {
         m_pressure_oversampling = 0 | (ctrlMeas & 0b11100011);
         m_temperature_oversampling = 0 | (ctrlMeas & 0b00011111);
         m_sensor_mode = 0 | (ctrlMeas & 0b11111100);
@@ -215,41 +221,41 @@ namespace MZDK {
         return writeByteData(CTRL_MEAS, ctrlMeas);
     }
 
-    int BME280::SetTemperatureOversampling(const uint8_t tempOversampling) { // ctrl_meas bits 7, 6, 5   page 29
+    int MZDK::BME280::SetTemperatureOversampling(const uint8_t tempOversampling) { // ctrl_meas bits 7, 6, 5   page 29
         uint8_t temp = readByteData(CTRL_MEAS) & 0b00011111;
         m_temperature_oversampling = tempOversampling;
 
         return writeByteData(CTRL_MEAS, temp | tempOversampling);
     }
 
-    int BME280::SetPressureOversampling(const uint8_t pressureOversampling) { // ctrl_meas bits 4, 3, 2
+    int MZDK::BME280::SetPressureOversampling(const uint8_t pressureOversampling) { // ctrl_meas bits 4, 3, 2
         uint8_t temp = readByteData(CTRL_MEAS) & 0b11100011;
         m_pressure_oversampling = pressureOversampling;
 
         return writeByteData(CTRL_MEAS, temp | pressureOversampling);
     }
 
-    int BME280::SetOversampling(const uint8_t tempOversampling, const uint8_t pressureOversampling) {
+    int MZDK::BME280::SetOversampling(const uint8_t tempOversampling, const uint8_t pressureOversampling) {
         m_pressure_oversampling = 0 | pressureOversampling;
         m_temperature_oversampling = 0 | tempOversampling;
 
         return writeByteData(CTRL_MEAS, tempOversampling | pressureOversampling | m_sensor_mode);
     }
 
-    int BME280::SetMode(const uint8_t mode) { // ctrl_meas bits 1, 0
+    int MZDK::BME280::SetMode(const uint8_t mode) { // ctrl_meas bits 1, 0
         uint8_t temp = readByteData(CTRL_MEAS) & 0b11111100;
         m_sensor_mode = mode;
 
         return writeByteData(CTRL_MEAS, temp | mode);
     }
 
-    int BME280::SetCtrlHum(const int humididtyOversampling) { // ctrl_hum bits 2, 1, 0    page 28
+    int MZDK::BME280::SetCtrlHum(const int humididtyOversampling) { // ctrl_hum bits 2, 1, 0    page 28
         m_humidity_oversampling = humididtyOversampling;
         
         return writeByteData(CTRL_HUM, humididtyOversampling);
     }
 
-    int BME280::GetAllResults(BME280ResultData *results) {
+    int MZDK::BME280::GetAllResults(BME280ResultData *results) {
         int status = 0;
         mSensorRawData resultRaw{};
 
@@ -262,7 +268,7 @@ namespace MZDK {
         return status;
     }
 
-    int BME280::GetAllResults(float *temperature, int *humidity, float *pressure) {
+    int MZDK::BME280::GetAllResults(float *temperature, int *humidity, float *pressure) {
         int status = 0;
         mSensorRawData resultRaw{};
 
@@ -275,7 +281,7 @@ namespace MZDK {
         return status;
     }
 
-    float BME280::GetTemperature(void) { // Preferable to use GetAllResults()
+    float MZDK::BME280::GetTemperature(void) { // Preferable to use GetAllResults()
         BME280ResultData results{};
 
         GetAllResults(&results);
@@ -283,7 +289,7 @@ namespace MZDK {
         return results.temperature; // compensateTemp(resultRaw.temperature);
     }
 
-    float BME280::GetPressure(void) {
+    float MZDK::BME280::GetPressure(void) {
         BME280ResultData results{};
 
         GetAllResults(&results);
@@ -291,7 +297,7 @@ namespace MZDK {
         return results.pressure;
     }
 
-    int BME280::GetHumidity(void) {
+    int MZDK::BME280::GetHumidity(void) {
         BME280ResultData results{};
 
         GetAllResults(&results);
@@ -299,15 +305,14 @@ namespace MZDK {
         return results.humididty;
     }
 
-    bool BME280::StatusMeasuringBusy(void) { // check status (0xF3) bit 3
+    bool MZDK::BME280::StatusMeasuringBusy(void) { // check status (0xF3) bit 3
         return ((readByteData(STATUS) & 8) == 8) ? true : false;
     }
 
-    bool BME280::ImUpdateBusy(void) { // check status (0xF3) bit 0
+    bool MZDK::BME280::ImUpdateBusy(void) { // check status (0xF3) bit 0
         return ((readByteData(STATUS) & 1) == 1) ? true : false;
     }
     
-    int BME280::Reset(void) { // write 0xB6 into reset (0xE0)
+    int MZDK::BME280::Reset(void) { // write 0xB6 into reset (0xE0)
         return writeByteData(RESET, 0xB6);
     }
-}
