@@ -59,7 +59,7 @@ constexpr static uint8_t humidityOversamplingX16 = 0x05;
 namespace MZDK {
     class BME280 {
     private:
-        ComProtocol *com_protocol;
+        ComProtocol *m_com_protocol;
 
         struct m_SensorRawData
         {

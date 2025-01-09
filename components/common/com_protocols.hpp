@@ -6,6 +6,7 @@
 namespace MZDK {
 class ComProtocol {
 public:
+    ComProtocol(){}
     uint8_t *rx_buf{};
 
     virtual uint8_t write(uint8_t reg, uint8_t data) = 0;

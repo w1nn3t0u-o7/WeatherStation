@@ -93,7 +93,7 @@ public:
         return data;
     }
 
-    int readWord(uint8_t reg) {
+    int readWord(uint8_t reg) override {
         uint16_t data;
         data = read(reg) << 8 | read(reg+1);
         return data;
