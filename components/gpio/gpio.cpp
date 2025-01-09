@@ -1,10 +1,22 @@
 #include "gpio.hpp"
 
+/**
+ * @brief Constructs a GPIO object and configures it with the specified mode and pull settings.
+ * 
+ * @param pin GPIO pin number.
+ * @param mode Initial GPIO mode.
+ * @param pull Initial GPIO pull mode.
+ */
 MZDK::GPIO::GPIO(uint16_t pin, GpioMode mode, GpioPullMode pull) : m_pin(pin) {
     setMode(mode);
     setPull(pull);
 }
 
+/**
+ * @brief Sets the GPIO mode for the pin.
+ * 
+ * @param mode New GPIO mode to configure.
+ */
 void MZDK::GPIO::setMode(GpioMode mode) {
 
     switch (mode) {
@@ -33,6 +45,11 @@ void MZDK::GPIO::setMode(GpioMode mode) {
     }
 }
 
+/**
+ * @brief Sets the GPIO pull mode for the pin.
+ * 
+ * @param pull New GPIO pull mode to configure.
+ */
 void MZDK::GPIO::setPull(GpioPullMode pull) {
 
     switch (pull) {
@@ -51,12 +68,19 @@ void MZDK::GPIO::setPull(GpioPullMode pull) {
     }
 }
 
+/**
+ * @brief Sets the GPIO pin to a high logic level.
+ */
 void MZDK::GPIO::setHigh() {
     REG_WRITE(GPIO_OUT_W1TS_REG, BIT(m_pin));
 }
 
+/**
+ * @brief Sets the GPIO pin to a low logic level.
+ */
 void MZDK::GPIO::setLow() {
     REG_WRITE(GPIO_OUT_W1TC_REG, BIT(m_pin));
 }
+
 
 
