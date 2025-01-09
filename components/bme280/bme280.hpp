@@ -1,6 +1,7 @@
 #pragma once
 
-#include "com_protocols.hpp"
+#include "i2c.hpp"
+#include "spi.hpp"
 
 // Registers
 constexpr static uint8_t HUM_LSB = 0xFE;
@@ -59,9 +60,8 @@ namespace MZDK {
     class BME280 {
     private:
         ComProtocol *com_protocol;
-        uint8_t m_dev_address = 0x77;
 
-        struct mSensorRawData
+        struct m_SensorRawData
         {
             long m_temperature = 0;
             unsigned long m_humididty = 0;
@@ -96,16 +96,10 @@ namespace MZDK {
 
         int getStatus();
         int getCalibrateData();
-        int getSensorData(mSensorRawData *resultRaw);
+        int getSensorData(m_SensorRawData *resultRaw);
         float compensateTemp(const signed long adc_T);
         float compensatePressure(const unsigned long adc_P);
         int compensateHumidity(const unsigned long adc_H);
-
-    
-        int writeByteData(const uint8_t reg, const uint8_t value);
-        int readByteData(const uint8_t reg);
-        int readWordData(const uint8_t reg);
-        int readBlockData(const uint8_t reg, uint8_t *buf, const int length);
         
     public:
         BME280(ComProtocol *com_protocol);
@@ -133,7 +127,6 @@ namespace MZDK {
         int SetMode(const uint8_t mode);                                    // ctrl_meas bits 1, 0
         int SetCtrlHum(const int humididtyOversampling);                    // ctrl_hum bits 2, 1, 0    page 28
         int GetAllResults(BME280ResultData *results);
-        int GetAllResults(float *temperature, int *humidity, float *pressure);
         float GetTemperature(void);    // Preferable to use GetAllResults()
         float GetPressure(void);       
         int GetHumidity(void);       
