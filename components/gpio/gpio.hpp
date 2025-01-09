@@ -1,6 +1,7 @@
+#pragma once
+
 #include "soc/gpio_periph.h"
 
-#include <stdexcept>
 #include <cstdio> // Dodanie nagłówka dla funkcji printf
 namespace MZDK {
 enum GpioMode {
@@ -22,7 +23,7 @@ class GPIO {
 private:
     int m_pin;
 public:
-    GPIO(int pin, GpioMode mode = GPIO_MODE_OUTPUT, GpioPullMode pull = GPIO_PULL_NONE);
+    GPIO(uint16_t pin, GpioMode mode, GpioPullMode pull);
 
     void setMode(GpioMode mode);
     void setPull(GpioPullMode pull);

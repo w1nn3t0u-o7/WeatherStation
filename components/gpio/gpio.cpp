@@ -1,17 +1,11 @@
 #include "gpio.hpp"
 
-MZDK::GPIO::GPIO(int pin, GpioMode mode = GPIO_MODE_OUTPUT, GpioPullMode pull = GPIO_PULL_NONE) : m_pin(pin) {
-    if (pin < 0 || pin > 39) {
-        throw std::invalid_argument("Invalid GPIO pin number");
-    }
+MZDK::GPIO::GPIO(uint16_t pin, GpioMode mode, GpioPullMode pull) : m_pin(pin) {
     setMode(mode);
     setPull(pull);
 }
 
 void MZDK::GPIO::setMode(GpioMode mode) {
-    if (mode < GPIO_MODE_DISABLE || mode > GPIO_MODE_INPUT_OUTPUT_OD) {
-        throw std::invalid_argument("Invalid GPIO mode");
-    }
 
     switch (mode) {
         case GPIO_MODE_DISABLE:
@@ -40,9 +34,6 @@ void MZDK::GPIO::setMode(GpioMode mode) {
 }
 
 void MZDK::GPIO::setPull(GpioPullMode pull) {
-    if (pull < GPIO_PULL_NONE || pull > GPIO_PULL_DOWN) {
-        throw std::invalid_argument("Invalid GPIO pull configuration");
-    }
 
     switch (pull) {
         case GPIO_PULL_UP:

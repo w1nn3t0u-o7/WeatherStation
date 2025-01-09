@@ -1,6 +1,6 @@
 #pragma once
 
-#include "i2c.hpp"
+//#include "i2c.hpp"
 #include "spi.hpp"
 
 // Registers
@@ -69,8 +69,8 @@ namespace MZDK {
         };
 
         uint8_t m_humidity_oversampling;
-        uint8_t m_pressure_oversampling;
         uint8_t m_temperature_oversampling;
+        uint8_t m_pressure_oversampling;
         uint8_t m_sensor_mode;
 
         // Calibration Data

@@ -1,15 +1,18 @@
+#pragma once
+
 #include "soc/spi_struct.h"
 #include "soc/spi_reg.h"
 #include "soc/dport_reg.h"
 #include "com_protocols.hpp"
+#include "gpio.hpp"
 
 #include <cstring>
 
 namespace MZDK {
-class SPIMaster : public ComProtocol {
+class SPI : public ComProtocol {
 private:
     spi_dev_t *spi;
-    uint8_t cs_pin;
+    GPIO cs_pin, mosi, miso, sck;
 
     void enable_peripheral() {
         if (spi == &SPI2) {
@@ -22,14 +25,11 @@ private:
     }
 
 public:
-    SPIMaster(int spi_num, uint8_t cs) : cs_pin(cs) {
+    SPI(int spi_num, GPIO cs, GPIO mosi, GPIO miso, GPIO sck) : cs_pin(cs), mosi(mosi), miso(miso), sck(sck) {
         if (spi_num == 2) {
             spi = &SPI2;
         } else if (spi_num == 3) {
             spi = &SPI3;
-        } else {
-            // W SPI1 w ESP32 jest używany tylko jako slave.
-            spi = nullptr;
         }
         enable_peripheral();
         init();
@@ -90,6 +90,12 @@ public:
 
         // Odczytaj dane z bufora sprzętowego
         data = spi->data_buf[0];
+        return data;
+    }
+
+    int readWord(uint8_t reg) {
+        uint16_t data;
+        data = read(reg) << 8 | read(reg+1);
         return data;
     }
 };

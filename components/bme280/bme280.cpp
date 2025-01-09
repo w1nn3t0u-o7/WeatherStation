@@ -31,29 +31,29 @@ MZDK::BME280::BME280(ComProtocol *com_protocol, uint8_t humidity_oversampling, u
 
     int MZDK::BME280::getCalibrateData() {
         //============================== Temperature Calibration Data ===========================
-        dig_t1 = com_protocol->read(0x88);
-        dig_t2 = com_protocol->read(0x8A);
-        dig_t3 = com_protocol->read(0x8C);
+        dig_t1 = static_cast<unsigned short>(com_protocol->readWord(0x88));
+        dig_t2 = static_cast<signed short>(com_protocol->readWord(0x8A));
+        dig_t3 = static_cast<signed short>(com_protocol->readWord(0x8C));
         //=======================================================================================
         //============================== Pressure Calibration Data ==============================
-        dig_p1 = com_protocol->read(0x8E);
-        dig_p2 = com_protocol->read(0x90);
-        dig_p3 = com_protocol->read(0x92);
-        dig_p4 = com_protocol->read(0x94);
-        dig_p5 = com_protocol->read(0x96);
-        dig_p6 = com_protocol->read(0x98);
-        dig_p7 = com_protocol->read(0x9A);
-        dig_p8 = com_protocol->read(0x9C);
-        dig_p9 = com_protocol->read(0x9E);
+        dig_p1 = static_cast<unsigned short>(com_protocol->readWord(0x8E));
+        dig_p2 = static_cast<signed short>(com_protocol->readWord(0x90));
+        dig_p3 = static_cast<signed short>(com_protocol->readWord(0x92));
+        dig_p4 = static_cast<signed short>(com_protocol->readWord(0x94));
+        dig_p5 = static_cast<signed short>(com_protocol->readWord(0x96));
+        dig_p6 = static_cast<signed short>(com_protocol->readWord(0x98));
+        dig_p7 = static_cast<signed short>(com_protocol->readWord(0x9A));
+        dig_p8 = static_cast<signed short>(com_protocol->readWord(0x9C));
+        dig_p9 = static_cast<signed short>(com_protocol->readWord(0x9E));
         //=======================================================================================
         //============================== Humidity Calibration Data ==============================
-        dig_h1 = com_protocol->read(0xA1);
-        dig_h2 = com_protocol->read(0xE1);
-        dig_h3 = com_protocol->read(0xE3);
-        int8_t digH4Msb = com_protocol->read(0xE4);
-        int8_t digH4H5Shared = com_protocol->read(0xE5); // this register hold parts of the values of dig_H4 and dig_h5
-        int8_t digH5Msb = com_protocol->read(0xE6);
-        dig_h6 = com_protocol->read(0xE7);
+        dig_h1 = static_cast<unsigned char>(com_protocol->read(0xA1));
+        dig_h2 = static_cast<signed short>(com_protocol->readWord(0xE1));
+        dig_h3 = static_cast<unsigned char>(com_protocol->read(0xE3));
+        int8_t digH4Msb = static_cast<int8_t>(com_protocol->read(0xE4));
+        int8_t digH4H5Shared = static_cast<int8_t>(com_protocol->read(0xE5)); // this register hold parts of the values of dig_H4 and dig_h5
+        int8_t digH5Msb = static_cast<int8_t>(com_protocol->read(0xE6));
+        dig_h6 = static_cast<int8_t>(com_protocol->read(0xE7));
 
         dig_h4 = static_cast<signed short>(digH4Msb << 4 | (digH4H5Shared & 0x0F));        // split and shift the bits appropriately.
         dig_h5 = static_cast<signed short>(digH5Msb << 4 | ((digH4H5Shared & 0xF0) >> 4)); // split and shift the bits appropriately.

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "soc/i2c_struct.h"
 #include "soc/i2c_reg.h"
 #include "soc/dport_reg.h"
