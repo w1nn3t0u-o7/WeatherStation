@@ -1,9 +1,10 @@
 #pragma once
 
 #include "soc/gpio_periph.h"
-
 #include <cstdio> // Dodanie nagłówka dla funkcji printf
+
 namespace MZDK {
+
 enum GpioMode {
     GPIO_MODE_DISABLE = 0,
     GPIO_MODE_INPUT = 1,
@@ -31,6 +32,6 @@ public:
     void setHigh();
     void setLow();
 
-    bool read();
 };
+
 }

@@ -59,6 +59,4 @@ void MZDK::GPIO::setLow() {
     REG_WRITE(GPIO_OUT_W1TC_REG, BIT(m_pin));
 }
 
-bool MZDK::GPIO::read() {
-    return (REG_READ(GPIO_IN_REG) & BIT(m_pin)) != 0;
-}
+

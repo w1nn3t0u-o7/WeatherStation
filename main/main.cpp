@@ -1,4 +1,3 @@
-//#include "gpio.hpp"
 //#include "i2c.hpp"
 #include "spi.hpp"
 #include "bme280.cpp"
@@ -19,11 +18,11 @@ extern "C" void app_main(void) {
     bme280.GetAllResults(&results);
     while(true) {
         bme280.GetAllResults(&results);
-        std::cout << "==================================================\n";
-        std::cout << "SPI Temperature: " << results.temperature << "c\n";
-        std::cout << "SPI Humidity   : " << results.humididty << "%\n";
-        std::cout << "SPI Pressure   : " << results.pressure << "Pa\n";
-        std::cout << "--------------------------------------------------\n";
+        std::cout << "==================================================" << std::endl;
+        std::cout << "SPI Temperature: " << results.temperature << "c" << std::endl;
+        std::cout << "SPI Humidity   : " << results.humididty << "%" << std::endl;
+        std::cout << "SPI Pressure   : " << results.pressure << "Pa" << std::endl;
+        std::cout << "--------------------------------------------------" << std::endl;
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
