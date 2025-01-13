@@ -8,10 +8,11 @@
 #include "soc/spi_struct.h"
 #include "soc/spi_reg.h"
 #include "soc/dport_reg.h"
+#include "soc/gpio_struct.h"
 #include <cstring>
 
 #include "com_protocols.hpp"
-#include "gpio.hpp"
+//#include "gpio.hpp"
 
 namespace MZDK {
 
@@ -21,54 +22,27 @@ namespace MZDK {
  */
 class SPI : public ComProtocol {
 private:
-    spi_dev_t *m_spi; ///< Pointer to the SPI hardware structure.
-    GPIO m_cs;        ///< GPIO pin for chip select.
-    GPIO m_mosi;      ///< GPIO pin for MOSI.
-    GPIO m_miso;      ///< GPIO pin for MISO.
-    GPIO m_sclk;      ///< GPIO pin for SCLK.
+        spi_dev_t* _spi_dev;
+        uint32_t _clock_div;
+        int _pin_miso;
+        int _pin_mosi;
+        int _pin_sclk;
+        int _pin_cs;
 
-    /**
-     * @brief Enables the SPI peripheral.
-     */
-    void m_enablePeripheral() override;
+        void configurePins();
+        void resetSpi();
 
-public:
-    /**
-     * @brief Constructs the SPI object and sets up GPIO pins.
-     * @param spi_num SPI port number (2 or 3).
-     * @param cs Chip select GPIO pin.
-     * @param mosi MOSI GPIO pin.
-     * @param miso MISO GPIO pin.
-     * @param sclk SCLK GPIO pin.
-     */
-    SPI(int spi_num, GPIO cs, GPIO mosi, GPIO miso, GPIO sclk);
+        int transferByte(const uint8_t reg_addr, const uint8_t data, uint8_t& rx_data, const uint8_t command = 0);
+        int transferMultipleBytes(const uint8_t reg_addr, uint8_t* tx_buf, uint8_t* rx_buf, size_t data_length, const uint8_t command = 0);
 
-    /**
-     * @brief Initializes the SPI peripheral with default settings.
-     */
-    void init();
+        int readByte(const uint8_t reg_addr);
+        int writeByte(const uint8_t reg_addr, const uint8_t data);
 
-    /**
-     * @brief Writes data to a register via SPI.
-     * @param reg Register address.
-     * @param data Data to write.
-     * @return Status of the write operation.
-     */
-    uint8_t write(uint8_t reg, uint8_t data) override;
-
-    /**
-     * @brief Reads data from a register via SPI.
-     * @param reg Register address.
-     * @return Data read from the register.
-     */
-    uint8_t read(uint8_t reg) override;
-
-    /**
-     * @brief Reads a 16-bit value from consecutive registers via SPI.
-     * @param reg Starting register address.
-     * @return 16-bit data read from the registers.
-     */
-    int readWord(uint8_t reg) override;
+    public:
+        int Init(spi_dev_t* spi_dev, const int pin_miso, const int pin_mosi, const int pin_sclk, const int pin_cs, uint32_t clock_div);
+        uint8_t readRegister(const uint8_t reg_addr) override;
+        uint16_t readWord(const uint8_t reg_addr) override;
+        int writeRegister(const uint8_t reg_addr, const uint8_t reg_data) override;
 };
-
 }
+

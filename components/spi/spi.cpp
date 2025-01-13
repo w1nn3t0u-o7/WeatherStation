@@ -1,125 +1,163 @@
-/**
- * @file spi.hpp
- * @brief Implementation of SPI driver for MZDK library.
- */
-
 #include "spi.hpp"
 
-/**
- * @brief Enables the SPI peripheral clock and resets the peripheral.
- */
-void MZDK::SPI::m_enablePeripheral() {
-    if (m_spi == &SPI2) {
-        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI2_CLK_EN);
-        DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI2_RST);
-    } else if (m_spi == &SPI3) {
-        DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI3_CLK_EN);
-        DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI3_RST);
-    }
+void MZDK::SPI::configurePins()
+{
+    // Configure MISO, MOSI, SCLK, and CS pins as GPIOs with appropriate modes
+    GPIO.func_out_sel_cfg[_pin_mosi].func_sel = 2;
+    GPIO.func_out_sel_cfg[_pin_sclk].func_sel = 0;
+    GPIO.func_in_sel_cfg[_pin_miso].func_sel = 2;
+    GPIO.func_out_sel_cfg[_pin_cs].func_sel = 5;
+
+    // Set CS pin as output
+    //GPIO.enable_w1ts = (1 << _pin_cs);
+    GPIO.out_w1ts = (1 << _pin_cs); // Set CS high
 }
 
-/**
- * @brief Constructs the SPI object and initializes the SPI peripheral.
- * 
- * @param port SPI port number (2 or 3).
- * @param cs GPIO pin for chip select.
- * @param mosi GPIO pin for MOSI.
- * @param miso GPIO pin for MISO.
- * @param sclk GPIO pin for SCLK.
- */
-MZDK::SPI::SPI(int port, GPIO cs, GPIO mosi, GPIO miso, GPIO sclk) 
-    : m_cs(cs), m_mosi(mosi), m_miso(miso), m_sclk(sclk) {
-    if (port == 2) {
-        m_spi = &SPI2;
-    } else if (port == 3) {
-        m_spi = &SPI3;
-    }
-    m_enablePeripheral();
-    init();
+void MZDK::SPI::resetSpi()
+{
+    DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI2_CLK_EN);
+    // mode0
+    _spi_dev->pin.ck_idle_edge = 1;
+    _spi_dev->user.ck_i_edge = 0;
+    _spi_dev->ctrl2.miso_delay_mode = 0;
+    _spi_dev->ctrl2.miso_delay_num = 0;
+    _spi_dev->ctrl2.mosi_delay_mode = 2;
+    _spi_dev->ctrl2.mosi_delay_num = 2;
+
+    // Reset SPI peripheral to a known state
+    // _spi_dev->slave.trans_done = 0;
+    _spi_dev->clock.clk_equ_sysclk = 0; // Disable system clock equivalence
+    _spi_dev->clock.clkdiv_pre = (_clock_div >> 8) & 0x1F; // Pre-divider (5 bits)
+    _spi_dev->clock.clkcnt_n = _clock_div & 0xFF;          // Clock divider (8 bits)
+    _spi_dev->clock.clkcnt_h = (_spi_dev->clock.clkcnt_n >> 1); // Half clock cycle
+    _spi_dev->clock.clkcnt_l = _spi_dev->clock.clkcnt_n;       // Full clock cycle
+
+    //_spi_dev->user.val = 0; // Clear user configuration
+    _spi_dev->pin.val = 0;  // Clear pin configuration
+
+    _spi_dev->user.doutdin = 1;    // Full-duplex
 }
 
-/**
- * @brief Initializes the SPI peripheral with default settings.
- */
-void MZDK::SPI::init() {
-    if (!m_spi) return;
 
-    // Configure SPI clock
-    m_spi->clock.val = 0; // Default clock settings
-    m_spi->user.val = 0;
-    m_spi->user1.val = 0;
-    m_spi->ctrl.val = 0;
+int MZDK::SPI::Init(spi_dev_t* spi_dev, const int pin_miso, const int pin_mosi, const int pin_sclk, const int pin_cs, uint32_t clock_div)
+{
+    _spi_dev = spi_dev;
+    _pin_miso = pin_miso;
+    _pin_mosi = pin_mosi;
+    _pin_sclk = pin_sclk;
+    _pin_cs = pin_cs;
+    _clock_div = clock_div;
 
-    // Set Master mode
-    m_spi->slave.val = 0;
-    m_spi->user.usr_miso_highpart = 0;
-    m_spi->user.usr_mosi_highpart = 0;
-
-    // Configure chip select
-    m_spi->pin.cs0_dis = 0; // Activate CS0
-}
-
-/**
- * @brief Writes a value to the specified register via SPI.
- * 
- * @param reg The register address to write to.
- * @param data The value to write.
- * @return Always returns 0.
- */
-uint8_t MZDK::SPI::write(uint8_t reg, uint8_t data) {
-    // Prepare the data buffer
-    m_spi->data_buf[0] = reg & 0x7F;
-    m_spi->data_buf[1] = data;
-
-    // Set transmission length
-    m_spi->mosi_dlen.usr_mosi_dbitlen = 15;
-
-    // Start transmission
-    m_spi->cmd.usr = 1;
-
-    // Wait for transmission to complete
-    while (m_spi->cmd.usr);
+    configurePins();
+    resetSpi();
 
     return 0;
 }
 
-/**
- * @brief Reads a value from the specified register via SPI.
- * 
- * @param reg The register address to read from.
- * @return The read value.
- */
-uint8_t MZDK::SPI::read(uint8_t reg) {
-    uint8_t data;
+int MZDK::SPI::transferByte(const uint8_t reg_addr, const uint8_t data, uint8_t& rx_data, const uint8_t command)
+{
+    // Begin transaction
+    GPIO.out_w1tc = (1 << _pin_cs); // CS low
 
-    // Prepare the buffer with the register address
-    m_spi->data_buf[0] = reg | 0x80;
+    // Send command and address
+    _spi_dev->data_buf[0] = (command << 8) | reg_addr;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr);
 
-    // Set transmission length (1 byte sent, `len` bytes received)
-    m_spi->mosi_dlen.usr_mosi_dbitlen = 7;         // 1 byte = 8 bits, -1 for the register
-    m_spi->miso_dlen.usr_miso_dbitlen = 7;
+    // Send data
+    _spi_dev->data_buf[0] = data;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr);
 
-    // Start transmission
-    m_spi->cmd.usr = 1;
+    // Read data
+    rx_data = _spi_dev->data_buf[0] & 0xFF;
 
-    // Wait for transmission to complete
-    while (m_spi->cmd.usr);
+    // End transaction
+    GPIO.out_w1ts = (1 << _pin_cs); // CS high
 
-    // Read data from the hardware buffer
-    data = m_spi->data_buf[0];
-    return data;
+    return 0;
 }
 
-/**
- * @brief Reads a 16-bit word starting from the specified register.
- * 
- * @param reg The starting register address.
- * @return The 16-bit read value.
- */
-int MZDK::SPI::readWord(uint8_t reg) {
-    uint16_t data;
-    data = read(reg) << 8 | read(reg + 1);
-    return data;
+int MZDK::SPI::readByte(const uint8_t reg_addr) {
+    uint8_t rx_data;
+    // Begin transaction
+    GPIO.out_w1tc = (1 << _pin_cs); // CS low
+
+    _spi_dev->user.usr_command = 1;
+    _spi_dev->user2.usr_command_bitlen = 1;
+    _spi_dev->user2.usr_command_value = 0;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr) {
+        ;
+    }
+    _spi_dev->user.val = 0;
+    _spi_dev->user.usr_addr = 1;
+    _spi_dev->user1.usr_addr_bitlen = 7;
+    _spi_dev->data_buf[0] = reg_addr;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr) {
+        ;
+    }
+    _spi_dev->user.val = 0;
+    _spi_dev->user.usr_miso = 1;
+    _spi_dev->miso_dlen.usr_miso_dbitlen = 7;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr) {
+        ;
+    }
+
+    // End transaction
+    GPIO.out_w1ts = (1 << _pin_cs); // CS high
+    rx_data = _spi_dev->data_buf[0];
+    return rx_data;
 }
+
+int MZDK::SPI::writeByte(const uint8_t reg_addr, const uint8_t data) {
+    // Begin transaction
+    GPIO.out_w1tc = (1 << _pin_cs); // CS low
+    _spi_dev->user.usr_command = 1;
+    _spi_dev->user2.usr_command_bitlen = 1;
+    _spi_dev->user2.usr_command_value = 0;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr) {
+        ;
+    }
+    _spi_dev->user.val = 0;
+    _spi_dev->user.usr_addr = 1;
+    _spi_dev->user1.usr_addr_bitlen = 7;
+    _spi_dev->data_buf[0] = reg_addr;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr) {
+        ;
+    }
+    _spi_dev->user.val = 0;
+    _spi_dev->user.usr_mosi = 1;
+    _spi_dev->mosi_dlen.usr_mosi_dbitlen = 7;
+    _spi_dev->data_buf[0] = data;
+    _spi_dev->cmd.usr = 1;
+    while (_spi_dev->cmd.usr) {
+        ;
+    }
+    _spi_dev->user.val = 0;
+    // End transaction
+    GPIO.out_w1ts = (1 << _pin_cs); // CS high
+    return 0;
+}
+
+uint8_t MZDK::SPI::readRegister(const uint8_t reg_addr)
+{
+    return readByte(reg_addr);
+}
+
+uint16_t MZDK::SPI::readWord(const uint8_t reg_addr)
+{
+    return ((readByte(reg_addr) << 8) | readByte(reg_addr + 1));
+}
+
+int MZDK::SPI::writeRegister(const uint8_t reg_addr, const uint8_t reg_data)
+{
+    return writeByte(reg_addr, reg_data);
+}
+
 
 

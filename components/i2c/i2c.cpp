@@ -1,123 +1,111 @@
-//WIP
+#include "i2c.hpp"
 
-// #include "i2c.hpp"
+void MZDK::I2C::SetClockSpeed(uint32_t clk_speed)
+{
+    I2C0.scl_low_period.period = clk_speed / 2;
+    I2C0.scl_high_period.period = clk_speed / 2;
+}
 
-// void MZDK::I2C::enable_peripheral() {
-//     if (i2c == &I2C0) {
-//         DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_I2C_EXT0_CLK_EN);
-//         DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_I2C_EXT0_RST);
-//     } else if (i2c == &I2C1) {
-//         DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_I2C_EXT1_CLK_EN);
-//         DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_I2C_EXT1_RST);
-//     }
-// }
+void MZDK::I2C::SetPins(int sda_io_num, int scl_io_num)
+{
+    _sda_io_num = sda_io_num;
+    _scl_io_num = scl_io_num;
 
-// int MZDK::I2C::wait_for_done() {
-//     // Czekaj na zakończenie transmisji lub timeout
-//     int timeout = 100000;
-//     while (!(i2c->int_raw.end_detect || i2c->int_raw.time_out) && --timeout);
-//     if (timeout <= 0 || i2c->int_raw.time_out) {
-//         return 1;
-//     }
-//     return 0;
-// }
+    // Configure SDA pin
+    PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[sda_io_num], PIN_FUNC_GPIO);
+    // gpio_set_direction((gpio_num_t)sda_io_num, GPIO_MODE_INPUT_OUTPUT);
 
-// MZDK::I2C::I2C(int i2c_num, uint8_t addr) : device_address(addr) {
-//     if (i2c_num == 0) {
-//         i2c = &I2C0;
-//     } else if (i2c_num == 1) {
-//         i2c = &I2C1;
-//     } else {
-//         i2c = nullptr;
-//     }
-//     enable_peripheral();
-//     init();
-// }
+    // Configure SCL pin
+    PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[scl_io_num], PIN_FUNC_GPIO);
+    // gpio_set_direction((gpio_num_t)scl_io_num, GPIO_MODE_INPUT_OUTPUT);
+}
 
-// void MZDK::I2C::init() {
-//     if (!i2c) return;
-//     // Ustawienie zegara
-//     i2c->scl_low_period.period = 40;  // Okres niski dla SCL
-//     i2c->scl_high_period.period = 40; // Okres wysoki dla SCL
+void MZDK::I2C::StartCondition()
+{
+    I2C0.command[0].op_code = 0;
+}
 
-//     // Ustawienia czasów start/stop
-//     i2c->scl_start_hold.time = 10; // Opóźnienie startu
-//     i2c->scl_stop_hold.time = 10;  // Opóźnienie stopu
-//     i2c->scl_rstart_setup.time = 10;
-//     i2c->scl_stop_setup.time = 10;
+void MZDK::I2C::StopCondition()
+{
+    I2C0.command[0].op_code = 3;
+}
 
-//     // Włącz czas nadzoru
-//     i2c->timeout.tout = 400; // Timeout na 400 cykli
+void MZDK::I2C::WaitForCompletion()
+{
+    while (I2C0.status_reg.bus_busy);
+}
 
-//     // Włączenie I2C w trybie master
-//     i2c->ctr.val = 0;
-//     i2c->ctr.ms_mode = 1;  // Tryb master
-//     i2c->ctr.trans_start = 0; // Brak aktywnej transmisji
-// }
+MZDK::I2C::I2C(int port, uint32_t clk_speed) : _port(port), _clk_speed(clk_speed) {}
 
-// int MZDK::I2C::write(uint8_t reg, uint8_t data) {
-    
-//     // Ustawienie adresu urządzenia w trybie zapisu
-//     i2c->fifo_data.data = (device_address << 1); // 7-bitowy adres + bit zapisu (0)
-//     i2c->fifo_data.data = reg;                  // Rejestr docelowy
+int MZDK::I2C::InitMaster(int sda_io_num, int scl_io_num)
+{
+    if (_port != 0)
+    {
+        return 1; // Currently supporting only I2C0
+    }
 
-//     // Zapisz dane do FIFO
-//     for (size_t i = 0; i < len; ++i) {
-//         i2c->fifo_data.data = data[i];
-//     }
+    SetPins(sda_io_num, scl_io_num);
+    SetClockSpeed(_clk_speed);
 
-//     // Rozpoczęcie transmisji
-//     i2c->command[0].op_code = 0x0; // START
-//     i2c->command[0].done = 0;
+    // Enable I2C peripheral
+    DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_I2C_EXT0_CLK_EN);
+    DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_I2C_EXT0_RST);
 
-//     i2c->command[1].op_code = 0x1; // WRITE
-//     i2c->command[1].byte_num = len + 1; // +1 dla adresu i rejestru
+    return 0;
+}
 
-//     i2c->command[2].op_code = 0x2; // STOP
-//     i2c->command[2].done = 0;
+uint8_t MZDK::I2C::readRegister(uint8_t reg_addr)
+{
+    uint8_t rxBuf = 0;
 
-//     i2c->ctr.trans_start = 1; // Rozpoczęcie transmisji
+    StartCondition();
 
-//     // Poczekaj na zakończenie
-//     int ret = wait_for_done();
-//     if (ret != 0) return ret;
+    // Send device address (write mode)
+    I2C0.fifo_data.data = (dev_addr << 1) | 0x0;
+    WaitForCompletion();
 
-//     return 0;
-// }
+    // Send register address
+    I2C0.fifo_data.data = reg_addr;
+    WaitForCompletion();
 
-// int MZDK::I2C::read(uint8_t reg) {
+    StartCondition();
 
-//     // Ustawienie adresu urządzenia w trybie zapisu
-//     i2c->fifo_data.data = (device_address << 1); // 7-bitowy adres + bit zapisu (0)
-//     i2c->fifo_data.data = reg;                  // Rejestr docelowy
+    // Send device address (read mode)
+    I2C0.fifo_data.data = (dev_addr << 1) | 0x1;
+    WaitForCompletion();
 
-//     // Rozpoczęcie transmisji
-//     i2c->command[0].op_code = 0x0; // START
-//     i2c->command[0].done = 0;
+    // Read data
+    rxBuf = I2C0.fifo_data.data;
 
-//     i2c->command[1].op_code = 0x1; // WRITE
-//     i2c->command[1].byte_num = 2;  // 1 bajt adresu + 1 bajt rejestru
+    StopCondition();
+    WaitForCompletion();
 
-//     i2c->command[2].op_code = 0x3; // RESTART
-//     i2c->command[2].done = 0;
+    return rxBuf;
+}
 
-//     i2c->command[3].op_code = 0x1; // READ
-//     i2c->command[3].byte_num = 1;
+uint16_t MZDK::I2C::readWord(const uint8_t reg_addr) {
+    return ((readRegister(reg_addr) << 8) | readRegister(reg_addr + 1));
+}
 
-//     i2c->command[4].op_code = 0x2; // STOP
-//     i2c->command[4].done = 0;
+int MZDK::I2C::writeRegister(const uint8_t reg_addr,const uint8_t data)
+{
+    StartCondition();
 
-//     i2c->ctr.trans_start = 1; // Rozpoczęcie transmisji
+    // Send device address (write mode)
+    I2C0.fifo_data.data = (dev_addr << 1) | 0x0;
+    WaitForCompletion();
 
-//     // Poczekaj na zakończenie
-//     int ret = wait_for_done();
-//     if (ret != 0) return ret;
+    // Send register address
+    I2C0.fifo_data.data = reg_addr;
+    WaitForCompletion();
 
-//     // Odczytaj dane z FIFO
-//     for (size_t i = 0; i < len; ++i) {
-//         data[i] = i2c->fifo_data.data;
-//     }
+    // Send data
+    I2C0.fifo_data.data = data;
+    WaitForCompletion();
 
-//     return 0;
-// }
+    StopCondition();
+    WaitForCompletion();
+
+    return 0;
+}
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 //#include "i2c.hpp"
 #include "spi.hpp"
 
@@ -189,6 +192,8 @@ namespace MZDK {
                uint8_t temperature_oversampling,
                uint8_t pressure_oversampling,
                uint8_t sensor_mode);
+
+        void Init();
 
         /**
          * @brief Struct to store the results from the BME280 sensor.

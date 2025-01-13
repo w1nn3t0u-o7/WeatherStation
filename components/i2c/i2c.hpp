@@ -1,33 +1,44 @@
-// WIP
 #pragma once
 
 #include "soc/i2c_struct.h"
 #include "soc/i2c_reg.h"
 #include "soc/dport_reg.h"
-#include "com_protocols.hpp"
+//#include "driver/gpio.h"
 #include "gpio.hpp"
-#include <cstring>
-#include <iostream>
+#include "com_protocols.hpp"
 
-namespace MZDK {
+namespace MZDK
+{
+    class I2C : public ComProtocol {
+    private:
+        uint8_t dev_addr = 0x77;
+        uint16_t _slaveAddr{};
+        int _port{};
+        int _sda_io_num{};
+        int _scl_io_num{};
+        uint32_t _clk_speed{};
 
-class I2C : public ComProtocol {
-private:
-    i2c_dev_t *m_i2c;
-    uint8_t m_device_address;
+        void SetClockSpeed(uint32_t clk_speed);
 
-    void m_scanner();
-    void m_enablePeripheral() override;
-    int m_waitForDone();
+        void SetPins(int sda_io_num, int scl_io_num);
 
-public:
-    I2C(int port, uint8_t addr);
+        void StartCondition();
 
-    void init();
+        void StopCondition();
 
-    int write(uint8_t reg, uint8_t data) override;
+        void WaitForCompletion();
 
-    int read(uint8_t reg) override;
-};
+    public:
+        I2C(int port, uint32_t clk_speed = 100000);
 
-}
+        int InitMaster(int sda_io_num, int scl_io_num);
+
+        uint8_t readRegister(const uint8_t reg_addr) override;
+
+        uint16_t readWord(const uint8_t reg_addr) override;
+
+        int writeRegister(const uint8_t reg_addr,const uint8_t reg_data) override;
+    };
+} // namespace CPPI2C
+
+
