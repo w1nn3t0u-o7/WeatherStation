@@ -76,24 +76,24 @@ namespace MZDK
 
     esp_err_t I2c::writeByteData(const uint8_t reg, const uint8_t value)
     {
-        return i2c->WriteRegister(_devAddress, reg, value);
+        return WriteRegister(_devAddress, reg, value);
     }
 
     int I2c::readByteData(const uint8_t reg)
     {
-        return i2c->ReadRegister(_devAddress, reg);
+        return ReadRegister(_devAddress, reg);
     }
 
     int I2c::readWordData(const uint8_t reg)
     {
         uint8_t buff[2];
-        i2c->ReadRegisterMultipleBytes(_devAddress, reg, buff, 2);
+        ReadRegisterMultipleBytes(_devAddress, reg, buff, 2);
         return buff[1] << 8 | buff[0];
     }
 
     esp_err_t I2c::readBlockData(const uint8_t reg, uint8_t *buf, const int length)
     {
-        return i2c->ReadRegisterMultipleBytes(_devAddress, reg, buf, length);
+        return ReadRegisterMultipleBytes(_devAddress, reg, buf, length);
     }
 
     void I2c::InitI2cForBme280(const uint8_t dev_addr)
