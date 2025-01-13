@@ -1,163 +1,132 @@
 #include "spi.hpp"
 
-void MZDK::SPI::configurePins()
+namespace CPPSPI
 {
-    // Configure MISO, MOSI, SCLK, and CS pins as GPIOs with appropriate modes
-    GPIO.func_out_sel_cfg[_pin_mosi].func_sel = 2;
-    GPIO.func_out_sel_cfg[_pin_sclk].func_sel = 0;
-    GPIO.func_in_sel_cfg[_pin_miso].func_sel = 2;
-    GPIO.func_out_sel_cfg[_pin_cs].func_sel = 5;
+    esp_err_t Spi::transferByte(const uint8_t reg_addr, const uint8_t data, const uint8_t command)
+    {
+        _spi_transaction.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA;
+        _spi_transaction.cmd = command;
+        _spi_transaction.length = 8;
+        _spi_transaction.addr = reg_addr;
+        _spi_transaction.tx_data[0] = data;
 
-    // Set CS pin as output
-    //GPIO.enable_w1ts = (1 << _pin_cs);
-    GPIO.out_w1ts = (1 << _pin_cs); // Set CS high
-}
-
-void MZDK::SPI::resetSpi()
-{
-    DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI2_CLK_EN);
-    // mode0
-    _spi_dev->pin.ck_idle_edge = 1;
-    _spi_dev->user.ck_i_edge = 0;
-    _spi_dev->ctrl2.miso_delay_mode = 0;
-    _spi_dev->ctrl2.miso_delay_num = 0;
-    _spi_dev->ctrl2.mosi_delay_mode = 2;
-    _spi_dev->ctrl2.mosi_delay_num = 2;
-
-    // Reset SPI peripheral to a known state
-    // _spi_dev->slave.trans_done = 0;
-    _spi_dev->clock.clk_equ_sysclk = 0; // Disable system clock equivalence
-    _spi_dev->clock.clkdiv_pre = (_clock_div >> 8) & 0x1F; // Pre-divider (5 bits)
-    _spi_dev->clock.clkcnt_n = _clock_div & 0xFF;          // Clock divider (8 bits)
-    _spi_dev->clock.clkcnt_h = (_spi_dev->clock.clkcnt_n >> 1); // Half clock cycle
-    _spi_dev->clock.clkcnt_l = _spi_dev->clock.clkcnt_n;       // Full clock cycle
-
-    //_spi_dev->user.val = 0; // Clear user configuration
-    _spi_dev->pin.val = 0;  // Clear pin configuration
-
-    _spi_dev->user.doutdin = 1;    // Full-duplex
-}
-
-
-int MZDK::SPI::Init(spi_dev_t* spi_dev, const int pin_miso, const int pin_mosi, const int pin_sclk, const int pin_cs, uint32_t clock_div)
-{
-    _spi_dev = spi_dev;
-    _pin_miso = pin_miso;
-    _pin_mosi = pin_mosi;
-    _pin_sclk = pin_sclk;
-    _pin_cs = pin_cs;
-    _clock_div = clock_div;
-
-    configurePins();
-    resetSpi();
-
-    return 0;
-}
-
-int MZDK::SPI::transferByte(const uint8_t reg_addr, const uint8_t data, uint8_t& rx_data, const uint8_t command)
-{
-    // Begin transaction
-    GPIO.out_w1tc = (1 << _pin_cs); // CS low
-
-    // Send command and address
-    _spi_dev->data_buf[0] = (command << 8) | reg_addr;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr);
-
-    // Send data
-    _spi_dev->data_buf[0] = data;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr);
-
-    // Read data
-    rx_data = _spi_dev->data_buf[0] & 0xFF;
-
-    // End transaction
-    GPIO.out_w1ts = (1 << _pin_cs); // CS high
-
-    return 0;
-}
-
-int MZDK::SPI::readByte(const uint8_t reg_addr) {
-    uint8_t rx_data;
-    // Begin transaction
-    GPIO.out_w1tc = (1 << _pin_cs); // CS low
-
-    _spi_dev->user.usr_command = 1;
-    _spi_dev->user2.usr_command_bitlen = 1;
-    _spi_dev->user2.usr_command_value = 0;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr) {
-        ;
-    }
-    _spi_dev->user.val = 0;
-    _spi_dev->user.usr_addr = 1;
-    _spi_dev->user1.usr_addr_bitlen = 7;
-    _spi_dev->data_buf[0] = reg_addr;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr) {
-        ;
-    }
-    _spi_dev->user.val = 0;
-    _spi_dev->user.usr_miso = 1;
-    _spi_dev->miso_dlen.usr_miso_dbitlen = 7;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr) {
-        ;
+        return spi_device_transmit(_handle, &_spi_transaction);
     }
 
-    // End transaction
-    GPIO.out_w1ts = (1 << _pin_cs); // CS high
-    rx_data = _spi_dev->data_buf[0];
-    return rx_data;
-}
+    esp_err_t Spi::transferMultiplesBytes(const uint8_t reg_addr, uint8_t* tx_buf, uint8_t* rx_buf, size_t data_length, const uint8_t command)
+    {
+        spi_transaction_t spi_transaction_multibyte;        // spi_transaction_t to use the tx and rx buffers
 
-int MZDK::SPI::writeByte(const uint8_t reg_addr, const uint8_t data) {
-    // Begin transaction
-    GPIO.out_w1tc = (1 << _pin_cs); // CS low
-    _spi_dev->user.usr_command = 1;
-    _spi_dev->user2.usr_command_bitlen = 1;
-    _spi_dev->user2.usr_command_value = 0;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr) {
-        ;
+        if (data_length < 1) { data_length = 1; }
+
+        spi_transaction_multibyte.flags = 0;
+        spi_transaction_multibyte.length = (8*data_length);
+        spi_transaction_multibyte.rxlength = 0;
+        spi_transaction_multibyte.cmd = command;
+        spi_transaction_multibyte.addr = reg_addr;
+        spi_transaction_multibyte.tx_buffer = tx_buf;
+        spi_transaction_multibyte.rx_buffer = rx_buf;        
+
+        return spi_device_transmit(_handle, &spi_transaction_multibyte);
     }
-    _spi_dev->user.val = 0;
-    _spi_dev->user.usr_addr = 1;
-    _spi_dev->user1.usr_addr_bitlen = 7;
-    _spi_dev->data_buf[0] = reg_addr;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr) {
-        ;
+
+    esp_err_t Spi::Init(const spi_host_device_t spi_peripheral, const int pin_miso, const int pin_mosi, const int pin_sclk)
+    {
+        esp_err_t status = ESP_OK;
+
+        _spi_peripheral = spi_peripheral;
+
+        _spi_transaction.tx_buffer = nullptr;
+        _spi_transaction.rx_buffer = nullptr;
+
+        _spi_bus_cfg.mosi_io_num = pin_mosi;
+        _spi_bus_cfg.miso_io_num = pin_miso;
+        _spi_bus_cfg.sclk_io_num = pin_sclk;
+        _spi_bus_cfg.quadwp_io_num = -1;
+        _spi_bus_cfg.quadhd_io_num = -1;
+
+        status |= spi_bus_initialize(spi_peripheral, &_spi_bus_cfg, SPI_DMA_CH_AUTO);
+
+        return status;
     }
-    _spi_dev->user.val = 0;
-    _spi_dev->user.usr_mosi = 1;
-    _spi_dev->mosi_dlen.usr_mosi_dbitlen = 7;
-    _spi_dev->data_buf[0] = data;
-    _spi_dev->cmd.usr = 1;
-    while (_spi_dev->cmd.usr) {
-        ;
+
+    esp_err_t Spi::RegisterDevice(const uint8_t mode, const int ss, const int addr_length, const int command_length, const int bus_speed)
+    {
+        esp_err_t status = ESP_OK;
+
+        _spi_interface_cfg = {};
+        _spi_interface_cfg.command_bits = command_length; 
+        _spi_interface_cfg.address_bits = addr_length;
+        _spi_interface_cfg.mode = mode;
+        _spi_interface_cfg.clock_speed_hz = bus_speed;
+        _spi_interface_cfg.spics_io_num = ss; // IO pin 5 is my chip select
+        _spi_interface_cfg.queue_size = 5;
+
+        status |= spi_bus_add_device(_spi_peripheral, &_spi_interface_cfg, &_handle);
+
+        return status;
     }
-    _spi_dev->user.val = 0;
-    // End transaction
-    GPIO.out_w1ts = (1 << _pin_cs); // CS high
-    return 0;
-}
 
-uint8_t MZDK::SPI::readRegister(const uint8_t reg_addr)
-{
-    return readByte(reg_addr);
-}
+    uint8_t Spi::ReadRegister(const uint8_t reg_addr, const uint8_t command)
+    {
+        transferByte(reg_addr, 0, command);
 
-uint16_t MZDK::SPI::readWord(const uint8_t reg_addr)
-{
-    return ((readByte(reg_addr) << 8) | readByte(reg_addr + 1));
-}
+        return _spi_transaction.rx_data[0];
+    }
 
-int MZDK::SPI::writeRegister(const uint8_t reg_addr, const uint8_t reg_data)
-{
-    return writeByte(reg_addr, reg_data);
-}
+    esp_err_t Spi::WriteRegister(const uint8_t reg_addr, const uint8_t reg_data, const uint8_t command)
+    {
+        esp_err_t status{ESP_OK};
+
+        status |= transferByte(reg_addr, reg_data, command);
+
+        return status;
+    }
+
+    esp_err_t Spi::WriteRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command)
+    {
+        return transferMultiplesBytes(reg_addr, reg_data_buffer, nullptr, byte_count, command);
+    }
+
+    esp_err_t Spi::ReadRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command)
+    {   
+        return transferMultiplesBytes(reg_addr, nullptr, reg_data_buffer, byte_count, command);
+    }
+
+    spi_device_handle_t Spi::GetHandle(void)
+    {
+        return _handle;
+    }
+
+    esp_err_t Spi::writeByteData(const uint8_t reg, const uint8_t value)
+    {
+        return spi->WriteRegister(reg, value, SPI_WRITE);
+    }
+
+    int Spi::readByteData(const uint8_t reg)
+    {
+        return spi->ReadRegister(reg, SPI_READ);
+    }
+
+    int Spi::readWordData(const uint8_t reg)
+    {
+        uint8_t buff[2];
+        spi->ReadRegisterMultipleBytes(reg, buff, 2, SPI_READ);
+        return buff[1] << 8 | buff[0];
+    }
+
+    esp_err_t Spi::readBlockData(const uint8_t reg, uint8_t *buf, const int length)
+    {
+        return spi->ReadRegisterMultipleBytes(reg, buf, length, SPI_READ);
+    }
+
+    esp_err_t Spi::InitSpiForBme280(const int ss)
+    {
+
+        return spi->RegisterDevice(MODE, ss, ADDR_BITS, CMD_BITS);
+    }
+
+} // namespace CPPSPI
 
 
 

@@ -1,37 +1,54 @@
-#include "i2c.hpp"
-#include "spi.hpp"
-#include "gpio.hpp"
-#include "bme280.cpp"
 #include <iostream>
-//#include "driver/gpio.h"
 
+#include "spi.hpp"
+#include "i2c.hpp"
+#include "bme280.hpp"
 
-extern "C" void app_main(void) {
-    MZDK::GPIO scl(22, MZDK::GPIO_MODE_INPUT_OUTPUT_OD, MZDK::GPIO_PULL_UP);
-    MZDK::GPIO sda(21, MZDK::GPIO_MODE_INPUT_OUTPUT_OD, MZDK::GPIO_PULL_UP);
-    MZDK::I2C i2c(0);
-    i2c.InitMaster(21, 22);
+constexpr static int SPI_3_MISO = 19;
+constexpr static int SPI_3_MOSI = 23;
+constexpr static int SPI_3_SCLK = 18;
+constexpr static int BME280_SS_PIN = 5;
 
-    MZDK::GPIO mosi(23, MZDK::GPIO_MODE_OUTPUT, MZDK::GPIO_PULL_NONE);
-    MZDK::GPIO miso(19, MZDK::GPIO_MODE_INPUT, MZDK::GPIO_PULL_NONE);
-    //gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT);
-    MZDK::GPIO sclk(18, MZDK::GPIO_MODE_OUTPUT, MZDK::GPIO_PULL_NONE);
-    MZDK::GPIO cs(5, MZDK::GPIO_MODE_OUTPUT, MZDK::GPIO_PULL_NONE);
-    MZDK::SPI spi;
-    spi.Init(&SPI2, 19, 23, 18, 5, (1 << 8) | 7);
+constexpr static int I2C_SDA = 17;
+constexpr static int I2C_SCL = 16;
+constexpr static uint32_t I2C_CLK_SPEED_HZ = 400000;
 
+MZDK::I2c i2c {I2C_NUM_0};
+MZDK::Spi spi3;
+MZDK::BME280 bme280(&spi3);
 
-    MZDK::BME280 bme280(&spi);
-    MZDK::BME280::BME280ResultData results;
-    while(true) {
-        bme280.GetDeviceID();
-        bme280.GetAllResults(&results);
-        std::cout << "==================================================" << std::endl;
-        std::cout << "SPI Temperature: " << results.temperature << "c" << std::endl;
-        std::cout << "SPI Humidity   : " << results.humididty << "%" << std::endl;
-        std::cout << "SPI Pressure   : " << results.pressure << "Pa" << std::endl;
-        std::cout << "--------------------------------------------------" << std::endl;
+extern "C" void app_main(void)
+{    
 
+    // Initialise the I2C
+    i2c.InitMaster(I2C_SDA, I2C_SCL, I2C_CLK_SPEED_HZ, true, true);
+    i2c.InitI2cForBme280(0x76);
+    // Initialize the SPI
+    spi3.Init(SPI3_HOST, SPI_3_MISO, SPI_3_MOSI, SPI_3_SCLK);
+    // Register BME280 device as SPI device using GPIO5 as the select pin
+    spi3.InitSpiForBme280(BME280_SS_PIN);
+    
+    // Initialize the BME280 device
+    bme280.Init();
+    bme280.SetMode(1);
+    bme280.SetConfigFilter(1);
+
+    float Temperature{};
+    float Pressure{};
+    int Humidity{};
+    int Id{};
+
+    while(true)
+    {
+        Id = bme280.GetDeviceID();
+        bme280.GetAllResults(&Temperature, &Humidity, &Pressure);
+        std::cout << "==================================================\n";
+        std::cout << "SPI Temperature: " << Temperature << "c\n";
+        std::cout << "SPI Humidity   : " << Humidity << "%\n";
+        std::cout << "SPI Pressure   : " << Pressure << "Pa\n";
+        std::cout << "SPI ID         : " << Id << '\n';
+        std::cout << "==================================================\n";
+        std::cout << "--------------------------------------------------\n";
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

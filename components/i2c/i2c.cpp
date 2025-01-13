@@ -1,111 +1,103 @@
 #include "i2c.hpp"
 
-void MZDK::I2C::SetClockSpeed(uint32_t clk_speed)
+namespace MZDK
 {
-    I2C0.scl_low_period.period = clk_speed / 2;
-    I2C0.scl_high_period.period = clk_speed / 2;
-}
-
-void MZDK::I2C::SetPins(int sda_io_num, int scl_io_num)
-{
-    _sda_io_num = sda_io_num;
-    _scl_io_num = scl_io_num;
-
-    // Configure SDA pin
-    PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[sda_io_num], PIN_FUNC_GPIO);
-    // gpio_set_direction((gpio_num_t)sda_io_num, GPIO_MODE_INPUT_OUTPUT);
-
-    // Configure SCL pin
-    PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[scl_io_num], PIN_FUNC_GPIO);
-    // gpio_set_direction((gpio_num_t)scl_io_num, GPIO_MODE_INPUT_OUTPUT);
-}
-
-void MZDK::I2C::StartCondition()
-{
-    I2C0.command[0].op_code = 0;
-}
-
-void MZDK::I2C::StopCondition()
-{
-    I2C0.command[0].op_code = 3;
-}
-
-void MZDK::I2C::WaitForCompletion()
-{
-    while (I2C0.status_reg.bus_busy);
-}
-
-MZDK::I2C::I2C(int port, uint32_t clk_speed) : _port(port), _clk_speed(clk_speed) {}
-
-int MZDK::I2C::InitMaster(int sda_io_num, int scl_io_num)
-{
-    if (_port != 0)
+    I2c::I2c(i2c_port_t port, size_t slv_rx_buf_len, size_t slv_tx_buf_len, int intr_alloc_flags)
     {
-        return 1; // Currently supporting only I2C0
+        _port = port;
+        _slv_rx_buf_len = slv_rx_buf_len;
+        _slv_tx_buf_len = slv_tx_buf_len;
+        _intr_alloc_flags = intr_alloc_flags;
     }
 
-    SetPins(sda_io_num, scl_io_num);
-    SetClockSpeed(_clk_speed);
+    I2c::~I2c()
+    {
+        i2c_driver_delete(_port);
+    }
 
-    // Enable I2C peripheral
-    DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_I2C_EXT0_CLK_EN);
-    DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_I2C_EXT0_RST);
+    esp_err_t I2c::InitMaster(int sda_io_num, int scl_io_num, uint32_t clk_speed, bool sda_pullup_en, bool scl_pullup_en, uint32_t clk_flags)
+    {
+        esp_err_t status = ESP_OK;
+        i2c_config_t _config{};
+        _mode = I2C_MODE_MASTER;
 
-    return 0;
-}
+        _config.mode = I2C_MODE_MASTER;
+        _config.sda_io_num = sda_io_num;
+        _config.scl_io_num = scl_io_num;
+        _config.master.clk_speed = clk_speed;
+        _config.sda_pullup_en = sda_pullup_en;
+        _config.scl_pullup_en = scl_pullup_en;
+        _config.clk_flags = clk_flags;
 
-uint8_t MZDK::I2C::readRegister(uint8_t reg_addr)
-{
-    uint8_t rxBuf = 0;
+        status |= i2c_param_config(_port, &_config);
+        
+        status |= i2c_driver_install(_port, _mode, _slv_rx_buf_len, _slv_tx_buf_len, 0);
 
-    StartCondition();
+        return status;
 
-    // Send device address (write mode)
-    I2C0.fifo_data.data = (dev_addr << 1) | 0x0;
-    WaitForCompletion();
+    }
 
-    // Send register address
-    I2C0.fifo_data.data = reg_addr;
-    WaitForCompletion();
+    uint8_t I2c::ReadRegister(uint8_t dev_addr, uint8_t reg_addr)
+    {
+        uint8_t rxBuf{};
 
-    StartCondition();
+        i2c_master_write_read_device(_port, dev_addr, &reg_addr, 1, &rxBuf, 1, pdMS_TO_TICKS(1000));
 
-    // Send device address (read mode)
-    I2C0.fifo_data.data = (dev_addr << 1) | 0x1;
-    WaitForCompletion();
+        return rxBuf;
+    }
 
-    // Read data
-    rxBuf = I2C0.fifo_data.data;
+    esp_err_t I2c::WriteRegister(uint8_t dev_addr, uint8_t reg_addr, uint8_t txData)
+    {
+        const uint8_t txBuf[2] {reg_addr, txData};
+        return i2c_master_write_to_device(_port, dev_addr, txBuf, 2, pdMS_TO_TICKS(1000));
+    }
 
-    StopCondition();
-    WaitForCompletion();
+    esp_err_t I2c::ReadRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *rx_data, int length)
+    {
+        return i2c_master_write_read_device(_port, dev_addr, &reg_addr, 1, rx_data, length, pdMS_TO_TICKS(1000));
+    }
 
-    return rxBuf;
-}
+    esp_err_t I2c::WriteRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *tx_data, int length)
+    {
+        esp_err_t status = ESP_OK;
+        uint8_t buffer[I2C_LINK_RECOMMENDED_SIZE(3)] = { 0 };
 
-uint16_t MZDK::I2C::readWord(const uint8_t reg_addr) {
-    return ((readRegister(reg_addr) << 8) | readRegister(reg_addr + 1));
-}
+        i2c_cmd_handle_t _handle = i2c_cmd_link_create_static(buffer, sizeof(buffer));
+        status |= i2c_master_start(_handle);
+        status |= i2c_master_write_byte(_handle, (dev_addr << 1) | I2C_MASTER_WRITE, true);
+        status |= i2c_master_write_byte(_handle, reg_addr, true);
+        status |= i2c_master_write(_handle, tx_data, length, true);
+        status |= i2c_master_stop(_handle);
+        status |= i2c_master_cmd_begin(_port, _handle, pdMS_TO_TICKS(1000));
+        i2c_cmd_link_delete_static(_handle);
 
-int MZDK::I2C::writeRegister(const uint8_t reg_addr,const uint8_t data)
-{
-    StartCondition();
+        return status;
+    }
 
-    // Send device address (write mode)
-    I2C0.fifo_data.data = (dev_addr << 1) | 0x0;
-    WaitForCompletion();
+    esp_err_t I2c::writeByteData(const uint8_t reg, const uint8_t value)
+    {
+        return i2c->WriteRegister(_devAddress, reg, value);
+    }
 
-    // Send register address
-    I2C0.fifo_data.data = reg_addr;
-    WaitForCompletion();
+    int I2c::readByteData(const uint8_t reg)
+    {
+        return i2c->ReadRegister(_devAddress, reg);
+    }
 
-    // Send data
-    I2C0.fifo_data.data = data;
-    WaitForCompletion();
+    int I2c::readWordData(const uint8_t reg)
+    {
+        uint8_t buff[2];
+        i2c->ReadRegisterMultipleBytes(_devAddress, reg, buff, 2);
+        return buff[1] << 8 | buff[0];
+    }
 
-    StopCondition();
-    WaitForCompletion();
+    esp_err_t I2c::readBlockData(const uint8_t reg, uint8_t *buf, const int length)
+    {
+        return i2c->ReadRegisterMultipleBytes(_devAddress, reg, buf, length);
+    }
 
-    return 0;
-}
-
+    void I2c::InitI2cForBme280(const uint8_t dev_addr)
+    {
+        _devAddress = dev_addr;
+    }
+} // namespace CPPI2C

@@ -1,44 +1,45 @@
 #pragma once
 
-#include "soc/i2c_struct.h"
-#include "soc/i2c_reg.h"
-#include "soc/dport_reg.h"
-//#include "driver/gpio.h"
-#include "gpio.hpp"
+#include "driver/i2c.h"
 #include "com_protocols.hpp"
 
 namespace MZDK
 {
-    class I2C : public ComProtocol {
+    class I2c : public ComProtocol
+    {
     private:
-        uint8_t dev_addr = 0x77;
         uint16_t _slaveAddr{};
-        int _port{};
-        int _sda_io_num{};
-        int _scl_io_num{};
-        uint32_t _clk_speed{};
+        i2c_port_t _port{};
+        i2c_mode_t _mode{};
+        size_t _slv_rx_buf_len{};
+        size_t _slv_tx_buf_len{};
+        int _intr_alloc_flags{};
 
-        void SetClockSpeed(uint32_t clk_speed);
-
-        void SetPins(int sda_io_num, int scl_io_num);
-
-        void StartCondition();
-
-        void StopCondition();
-
-        void WaitForCompletion();
+        uint8_t _devAddress{};
 
     public:
-        I2C(int port, uint32_t clk_speed = 100000);
+        I2c(i2c_port_t port, size_t slv_rx_buf_len = 0, size_t slv_tx_buf_len = 0, int intr_alloc_flags = 0);
+        ~I2c();
 
-        int InitMaster(int sda_io_num, int scl_io_num);
+        esp_err_t InitMaster(int sda_io_num,
+                             int scl_io_num,
+                             uint32_t clk_speed,
+                             bool sda_pullup_en = false,
+                             bool scl_pullup_en = false,
+                             uint32_t clk_flags = I2C_SCLK_SRC_FLAG_FOR_NOMAL);
 
-        uint8_t readRegister(const uint8_t reg_addr) override;
+        uint8_t ReadRegister(uint8_t dev_addr, uint8_t reg_addr);        
+        esp_err_t WriteRegister(uint8_t dev_addr, uint8_t reg_addr, uint8_t txData);
+        esp_err_t ReadRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *rx_data, int length);
+        esp_err_t WriteRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *tx_data, int length);
 
-        uint16_t readWord(const uint8_t reg_addr) override;
+        esp_err_t writeByteData(const uint8_t reg, const uint8_t value) override;
+        int readByteData(const uint8_t reg) override;
+        int readWordData(const uint8_t reg) override;
+        esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length) override;
 
-        int writeRegister(const uint8_t reg_addr,const uint8_t reg_data) override;
-    };
+        void InitI2cForBme280(const uint8_t dev_addr = 0x76);
+    }; // class I2c
 } // namespace CPPI2C
 
 

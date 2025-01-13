@@ -1,17 +1,18 @@
 #pragma once
 
-#include "soc/soc.h"
 #include <cstring>
+#include "esp_err.h"
 
 namespace MZDK {
 class ComProtocol {
 private:
-    //virtual void m_enablePeripheral() = 0;
+    
 public:
 
-    virtual uint8_t readRegister(const uint8_t reg_addr) = 0;
-    virtual uint16_t readWord(const uint8_t reg_addr) = 0;
-    virtual int writeRegister(const uint8_t reg_addr, const uint8_t reg_data) = 0;
+    virtual esp_err_t writeByteData(const uint8_t reg, const uint8_t value) = 0;
+    virtual int readByteData(const uint8_t reg) = 0;
+    virtual int readWordData(const uint8_t reg) = 0;
+    virtual esp_err_t readBlockData(const uint8_t reg, uint8_t *buf, const int length) = 0;
     virtual ~ComProtocol() {}
 };
 }
