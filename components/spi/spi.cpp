@@ -1,132 +1,121 @@
 #include "spi.hpp"
 
-namespace MZDK
-{
-    esp_err_t Spi::transferByte(const uint8_t reg_addr, const uint8_t data, const uint8_t command)
-    {
-        _spi_transaction.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA;
-        _spi_transaction.cmd = command;
-        _spi_transaction.length = 8;
-        _spi_transaction.addr = reg_addr;
-        _spi_transaction.tx_data[0] = data;
+namespace MZDK {
+    SPI::SPI(const spi_host_device_t spi_peripheral, const int miso_pin, const int mosi_pin, const int sclk_pin) {
+        m_spi_peripheral = spi_peripheral;
 
-        return spi_device_transmit(_handle, &_spi_transaction);
+        m_spi_transfer.tx_buffer = nullptr;
+        m_spi_transfer.rx_buffer = nullptr;
+
+        m_spi_bus_config.mosi_io_num = mosi_pin;
+        m_spi_bus_config.miso_io_num = miso_pin;
+        m_spi_bus_config.sclk_io_num = sclk_pin;
+        m_spi_bus_config.quadwp_io_num = -1;
+        m_spi_bus_config.quadhd_io_num = -1;
+
+        spi_bus_initialize(spi_peripheral, &m_spi_bus_config, SPI_DMA_CH_AUTO);
     }
 
-    esp_err_t Spi::transferMultiplesBytes(const uint8_t reg_addr, uint8_t* tx_buf, uint8_t* rx_buf, size_t data_length, const uint8_t command)
-    {
-        spi_transaction_t spi_transaction_multibyte;        // spi_transaction_t to use the tx and rx buffers
+    int SPI::m_transferByte(const uint8_t reg_addr, const uint8_t data, const uint8_t command) {
+        m_spi_transfer.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA;
+        m_spi_transfer.cmd = command;
+        m_spi_transfer.length = 8;
+        m_spi_transfer.addr = reg_addr;
+        m_spi_transfer.tx_data[0] = data;
 
-        if (data_length < 1) { data_length = 1; }
+        return spi_device_transmit(m_spi_device_handle, &m_spi_transfer);
+    }
+
+    int SPI::m_transferMultiplesBytes(const uint8_t reg_addr, uint8_t* tx_buf, uint8_t* rx_buf, size_t data_length, const uint8_t command) {
+        spi_transaction_t spi_transaction_multibyte;        
+
+        if (data_length < 1) { 
+            data_length = 1; 
+        }
 
         spi_transaction_multibyte.flags = 0;
-        spi_transaction_multibyte.length = (8*data_length);
+        spi_transaction_multibyte.length = (8 * data_length);
         spi_transaction_multibyte.rxlength = 0;
         spi_transaction_multibyte.cmd = command;
         spi_transaction_multibyte.addr = reg_addr;
         spi_transaction_multibyte.tx_buffer = tx_buf;
         spi_transaction_multibyte.rx_buffer = rx_buf;        
 
-        return spi_device_transmit(_handle, &spi_transaction_multibyte);
+        return spi_device_transmit(m_spi_device_handle, &spi_transaction_multibyte);
     }
 
-    esp_err_t Spi::Init(const spi_host_device_t spi_peripheral, const int pin_miso, const int pin_mosi, const int pin_sclk)
-    {
-        esp_err_t status = ESP_OK;
+    int SPI::registerDevice(const uint8_t mode, const int cs, const int addr_length, const int command_length, const int bus_speed) {
+        int status = 0;
 
-        _spi_peripheral = spi_peripheral;
+        m_spi_interface_config = {};
+        m_spi_interface_config.command_bits = command_length; 
+        m_spi_interface_config.address_bits = addr_length;
+        m_spi_interface_config.mode = mode;
+        m_spi_interface_config.clock_speed_hz = bus_speed;
+        m_spi_interface_config.spics_io_num = cs; 
+        m_spi_interface_config.queue_size = 5;
 
-        _spi_transaction.tx_buffer = nullptr;
-        _spi_transaction.rx_buffer = nullptr;
-
-        _spi_bus_cfg.mosi_io_num = pin_mosi;
-        _spi_bus_cfg.miso_io_num = pin_miso;
-        _spi_bus_cfg.sclk_io_num = pin_sclk;
-        _spi_bus_cfg.quadwp_io_num = -1;
-        _spi_bus_cfg.quadhd_io_num = -1;
-
-        status |= spi_bus_initialize(spi_peripheral, &_spi_bus_cfg, SPI_DMA_CH_AUTO);
+        status |= spi_bus_add_device(m_spi_peripheral, &m_spi_interface_config, &m_spi_device_handle);
 
         return status;
     }
 
-    esp_err_t Spi::RegisterDevice(const uint8_t mode, const int ss, const int addr_length, const int command_length, const int bus_speed)
-    {
-        esp_err_t status = ESP_OK;
+    void SPI::setBusSpeed(const int bus_speed) {
+        m_spi_interface_config.clock_speed_hz = bus_speed;
+    }
 
-        _spi_interface_cfg = {};
-        _spi_interface_cfg.command_bits = command_length; 
-        _spi_interface_cfg.address_bits = addr_length;
-        _spi_interface_cfg.mode = mode;
-        _spi_interface_cfg.clock_speed_hz = bus_speed;
-        _spi_interface_cfg.spics_io_num = ss; // IO pin 5 is my chip select
-        _spi_interface_cfg.queue_size = 5;
+    int SPI::getBusSpeed() {
+        return m_spi_interface_config.clock_speed_hz;
+    }
 
-        status |= spi_bus_add_device(_spi_peripheral, &_spi_interface_cfg, &_handle);
+    spi_device_handle_t SPI::getSpiDeviceHandle() {
+        return m_spi_device_handle;
+    }
+
+    uint8_t SPI::readRegister(const uint8_t reg_addr, const uint8_t command) {
+        m_transferByte(reg_addr, 0, command);
+
+        return m_spi_transfer.rx_data[0];
+    }
+
+    int SPI::writeRegister(const uint8_t reg_addr, const uint8_t reg_data, const uint8_t command) {
+        int status = 0;
+
+        status |= m_transferByte(reg_addr, reg_data, command);
 
         return status;
     }
 
-    uint8_t Spi::ReadRegister(const uint8_t reg_addr, const uint8_t command)
-    {
-        transferByte(reg_addr, 0, command);
-
-        return _spi_transaction.rx_data[0];
+    int SPI::writeRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command) {
+        return m_transferMultiplesBytes(reg_addr, reg_data_buffer, nullptr, byte_count, command);
     }
 
-    esp_err_t Spi::WriteRegister(const uint8_t reg_addr, const uint8_t reg_data, const uint8_t command)
-    {
-        esp_err_t status{ESP_OK};
-
-        status |= transferByte(reg_addr, reg_data, command);
-
-        return status;
+    int SPI::readRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command) {   
+        return m_transferMultiplesBytes(reg_addr, nullptr, reg_data_buffer, byte_count, command);
     }
 
-    esp_err_t Spi::WriteRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command)
-    {
-        return transferMultiplesBytes(reg_addr, reg_data_buffer, nullptr, byte_count, command);
+    int SPI::writeByteData(const uint8_t reg, const uint8_t value) {
+        return writeRegister(reg, value, SPI_WRITE);
     }
 
-    esp_err_t Spi::ReadRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command)
-    {   
-        return transferMultiplesBytes(reg_addr, nullptr, reg_data_buffer, byte_count, command);
+    int SPI::readByteData(const uint8_t reg) {
+        return readRegister(reg, SPI_READ);
     }
 
-    spi_device_handle_t Spi::GetHandle(void)
-    {
-        return _handle;
-    }
-
-    esp_err_t Spi::writeByteData(const uint8_t reg, const uint8_t value)
-    {
-        return WriteRegister(reg, value, SPI_WRITE);
-    }
-
-    int Spi::readByteData(const uint8_t reg)
-    {
-        return ReadRegister(reg, SPI_READ);
-    }
-
-    int Spi::readWordData(const uint8_t reg)
-    {
+    int SPI::readWordData(const uint8_t reg) {
         uint8_t buff[2];
-        ReadRegisterMultipleBytes(reg, buff, 2, SPI_READ);
+        readRegisterMultipleBytes(reg, buff, 2, SPI_READ);
         return buff[1] << 8 | buff[0];
     }
 
-    esp_err_t Spi::readBlockData(const uint8_t reg, uint8_t *buf, const int length)
-    {
-        return ReadRegisterMultipleBytes(reg, buf, length, SPI_READ);
+    int SPI::readBlockData(const uint8_t reg, uint8_t *buf, const int length) {
+        return readRegisterMultipleBytes(reg, buf, length, SPI_READ);
     }
 
-    esp_err_t Spi::InitSpiForBme280(const int ss)
-    {
-
-        return RegisterDevice(MODE, ss, ADDR_BITS, CMD_BITS);
+    int SPI::initSpiForBme280(const int cs) {
+        return registerDevice(MODE, cs, ADDR_BITS, CMD_BITS);
     }
-
-} // namespace CPPSPI
+} 
 
 
 
