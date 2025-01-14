@@ -1,13 +1,13 @@
 #pragma once
 
+#include <memory>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
 #include "com_protocols.hpp"
 
-namespace MZDK
-{
-    class BME280
-    {
+namespace MZDK {
+    class BME280 {
         // Registers
         constexpr static uint8_t HUM_LSB = 0xFE;
         constexpr static uint8_t HUM_MSB = 0xFD;
@@ -25,57 +25,57 @@ namespace MZDK
         constexpr static uint8_t ID = 0xD0;
 
         // Settings
-        constexpr static uint8_t pressureSensorDisable = 0x00 << 2;
-        constexpr static uint8_t pressureOversamplingX1 = 0x01 << 2;
-        constexpr static uint8_t pressureOversamplingX2 = 0x02 << 2;
-        constexpr static uint8_t pressureOversamplingX4 = 0x03 << 2;
-        constexpr static uint8_t pressureOversamplingX8 = 0x04 << 2;
-        constexpr static uint8_t pressureOversamplingX16 = 0x05 << 2;
-        constexpr static uint8_t temperatureSensorDisable = 0x00 << 5;
-        constexpr static uint8_t temperatureOversamplingX1 = 0x01 << 5;
-        constexpr static uint8_t temperatureOversamplingX2 = 0x02 << 5;
-        constexpr static uint8_t temperatureOversamplingX4 = 0x03 << 5;
-        constexpr static uint8_t temperatureOversamplingX8 = 0x04 << 5;
-        constexpr static uint8_t temperatureOversamplingX16 = 0x05 << 5;
-        constexpr static uint8_t sensorSleepMode = 0x00;
-        constexpr static uint8_t sensorForcedMode = 0x01;
-        constexpr static uint8_t sensorNormalMode = 0x03;
+        constexpr static uint8_t pressure_sensor_disable = 0x00 << 2;
+        constexpr static uint8_t pressure_oversampling_X1 = 0x01 << 2;
+        constexpr static uint8_t pressure_oversampling_X2 = 0x02 << 2;
+        constexpr static uint8_t pressure_oversampling_X4 = 0x03 << 2;
+        constexpr static uint8_t pressure_oversampling_X8 = 0x04 << 2;
+        constexpr static uint8_t pressure_oversampling_X16 = 0x05 << 2;
+        constexpr static uint8_t temperature_sensor_disable = 0x00 << 5;
+        constexpr static uint8_t temperature_oversampling_X1 = 0x01 << 5;
+        constexpr static uint8_t temperature_oversampling_X2 = 0x02 << 5;
+        constexpr static uint8_t temperature_oversampling_X4 = 0x03 << 5;
+        constexpr static uint8_t temperature_oversampling_X8 = 0x04 << 5;
+        constexpr static uint8_t temperature_oversampling_X16 = 0x05 << 5;
+        constexpr static uint8_t sensor_sleep_mode = 0x00;
+        constexpr static uint8_t sensor_forced_mode = 0x01;
+        constexpr static uint8_t sensor_normal_mode = 0x03;
 
-        constexpr static uint8_t configStandby0_5ms = 0x00 << 5;
-        constexpr static uint8_t configStandby62_5ms = 0x01 << 5;
-        constexpr static uint8_t configStandby125ms = 0x02 << 5;
-        constexpr static uint8_t configStandby250ms = 0x03 << 5;
-        constexpr static uint8_t configStandby500ms = 0x04 << 5;
-        constexpr static uint8_t configStandby1000ms = 0x05 << 5;
-        constexpr static uint8_t configStandby10ms = 0x06 << 5;
-        constexpr static uint8_t configStandby20ms = 0x07 << 5;
-        constexpr static uint8_t configFilterOff = 0x00 << 2;
-        constexpr static uint8_t configFilter2 = 0x01 << 2;
-        constexpr static uint8_t configFilter4 = 0x02 << 2;
-        constexpr static uint8_t configFilter8 = 0x03 << 2;
-        constexpr static uint8_t configFilter16 = 0x04 << 2;
+        constexpr static uint8_t config_standby_0_5ms = 0x00 << 5;
+        constexpr static uint8_t config_standby_62_5ms = 0x01 << 5;
+        constexpr static uint8_t config_standby_125ms = 0x02 << 5;
+        constexpr static uint8_t config_standby_250ms = 0x03 << 5;
+        constexpr static uint8_t config_standby_500ms = 0x04 << 5;
+        constexpr static uint8_t config_standby_1000ms = 0x05 << 5;
+        constexpr static uint8_t config_standby_10ms = 0x06 << 5;
+        constexpr static uint8_t config_standby_20ms = 0x07 << 5;
+        constexpr static uint8_t config_silter_off = 0x00 << 2;
+        constexpr static uint8_t config_silter_2 = 0x01 << 2;
+        constexpr static uint8_t config_filter_4 = 0x02 << 2;
+        constexpr static uint8_t config_filter_8 = 0x03 << 2;
+        constexpr static uint8_t config_filter_16 = 0x04 << 2;
 
-        constexpr static uint8_t humiditySensorDisable = 0x00;
-        constexpr static uint8_t humidityOversamplingX1 = 0x01;
-        constexpr static uint8_t humidityOversamplingX2 = 0x02;
-        constexpr static uint8_t humidityOversamplingX4 = 0x03;
-        constexpr static uint8_t humidityOversamplingX8 = 0x04;
-        constexpr static uint8_t humidityOversamplingX16 = 0x05;
+        constexpr static uint8_t humidity_sensor_disable = 0x00;
+        constexpr static uint8_t humidity_oversampling_X1 = 0x01;
+        constexpr static uint8_t humidity_oversampling_X2 = 0x02;
+        constexpr static uint8_t humidity_oversampling_X4 = 0x03;
+        constexpr static uint8_t humidity_oversampling_X8 = 0x04;
+        constexpr static uint8_t humidity_oversampling_X16 = 0x05;
 
     private:
         ComProtocol *m_com_protocol;
 
-        struct SensorRawData
+        struct m_SensorRawData
         {
-            long temperature = 0;
-            unsigned long humididty = 0;
-            unsigned long pressure = 0;
+            long m_temperature = 0;
+            unsigned long m_humididty = 0;
+            unsigned long m_pressure = 0;
         };
 
-        uint8_t _humidityOversamplingValue = humidityOversamplingX1;    // Default to 1X over sampling
-        uint8_t _pressureOversamplingValue = pressureOversamplingX1;    // Default to 1X over sampling
-        uint8_t _temperatureOversamplingValue = temperatureOversamplingX1; // Default to 1X over sampling
-        uint8_t _sensorModeValue = sensorForcedMode;              // Default to forced mode
+        uint8_t m_humidity_oversampling_value = humidity_oversampling_X1;    // Default to 1X over sampling
+        uint8_t m_pressure_oversampling_value = pressure_oversampling_X1;    // Default to 1X over sampling
+        uint8_t m_temperature_oversampling_value = temperature_oversampling_X1; // Default to 1X over sampling
+        uint8_t m_sensor_mode_value = sensor_forced_mode;              // Default to forced mode
 
         // Calibration Data
         unsigned short  dig_t1 = 0;
@@ -100,7 +100,7 @@ namespace MZDK
 
         int getStatus();
         int getCalibrateData();
-        int getSensorData(SensorRawData *resultRaw);
+        int getSensorData(m_SensorRawData *result_raw);
         float compensateTemp(const signed long adc_T);
         float compensatePressure(const unsigned long adc_P);
         int compensateHumidity(const unsigned long adc_H);
@@ -108,35 +108,34 @@ namespace MZDK
     public:
         BME280(ComProtocol *com_protocol) : m_com_protocol(com_protocol) {};
 
-        struct BME280ResultData
-        {
+        struct BME280ResultData {
             float temperature = 0.0;
             int humididty = 0;
             float pressure = 0.0;
         } results;
 
-        esp_err_t Init(const uint8_t humidityOversampling = humidityOversamplingX1,
-                       const uint8_t temperatureOversampling = temperatureOversamplingX1,
-                       const uint8_t pressureOversampling = pressureOversamplingX1,
-                       const uint8_t sensorMode = sensorForcedMode);
-        //esp_err_t Close(void);
-        int GetDeviceID(void);
-        esp_err_t SetConfig(const uint8_t config);
-        esp_err_t SetConfigStandbyT(const uint8_t standby);   // config bits 7, 6, 5  page 30
-        esp_err_t SetConfigFilter(const uint8_t filter);      // config bits 4, 3, 2
-        esp_err_t SetCtrlMeas(const uint8_t ctrlMeas);
-        esp_err_t SetTemperatureOversampling(const uint8_t tempOversampling);     // ctrl_meas bits 7, 6, 5   page 29
-        esp_err_t SetPressureOversampling(const uint8_t pressureOversampling);    // ctrl_meas bits 4, 3, 2
-        esp_err_t SetOversampling(const uint8_t tempOversampling, const uint8_t pressureOversampling);
-        esp_err_t SetMode(const uint8_t mode);                                    // ctrl_meas bits 1, 0
-        esp_err_t SetCtrlHum(const int humididtyOversampling);                    // ctrl_hum bits 2, 1, 0    page 28
-        esp_err_t GetAllResults(BME280ResultData *results);
-        esp_err_t GetAllResults(float *temperature, int *humidity, float *pressure);
-        float GetTemperature(void);    // Preferable to use GetAllResults()
-        float GetPressure(void);       
-        int GetHumidity(void);       
-        bool StatusMeasuringBusy(void); // check status (0xF3) bit 3
-        bool ImUpdateBusy(void);        // check status (0xF3) bit 0
-        esp_err_t Reset(void);                // write 0xB6 into reset (0xE0)
+        int init(const uint8_t humidity_oversampling = humidity_oversampling_X1,
+                       const uint8_t temperature_oversampling = temperature_oversampling_X1,
+                       const uint8_t pressure_oversampling = pressure_oversampling_X1,
+                       const uint8_t sensor_mode = sensor_forced_mode);
+
+        int getDeviceID();
+        int setConfig(const uint8_t config);
+        int setConfigStandbyT(const uint8_t standby);   // config bits 7, 6, 5  page 30
+        int setConfigFilter(const uint8_t filter);      // config bits 4, 3, 2
+        int setCtrlMeas(const uint8_t ctrl_measure);
+        int setTemperatureOversampling(const uint8_t temperature_oversampling);     // ctrl_meas bits 7, 6, 5   page 29
+        int setPressureOversampling(const uint8_t pressure_oversampling);    // ctrl_meas bits 4, 3, 2
+        int setOversampling(const uint8_t temperature_oversampling, const uint8_t pressure_oversampling);
+        int setMode(const uint8_t mode);                                    // ctrl_meas bits 1, 0
+        int setCtrlHum(const int humididtyOversampling);                    // ctrl_hum bits 2, 1, 0    page 28
+        int getAllResults(BME280ResultData *results);
+        int getAllResults(float *temperature, int *humidity, float *pressure);
+        float getTemperature();    // Preferable to use GetAllResults()
+        float getPressure();       
+        int getHumidity();       
+        bool statusMeasuringBusy(); // check status (0xF3) bit 3
+        bool imUpdateBusy();        // check status (0xF3) bit 0
+        int reset();                // write 0xB6 into reset (0xE0)
     };
-} // namespace CPPBME280
+} 

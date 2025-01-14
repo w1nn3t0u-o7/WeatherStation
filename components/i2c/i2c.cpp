@@ -20,30 +20,30 @@ namespace MZDK {
         i2c_driver_delete(m_port);
     }
 
-    uint8_t I2C::readRegister(uint8_t dev_addr, uint8_t reg_addr) {
+    uint8_t I2C::readRegister(uint8_t reg_addr) {
         uint8_t rxBuf{};
 
-        i2c_master_write_read_device(m_port, dev_addr, &reg_addr, 1, &rxBuf, 1, pdMS_TO_TICKS(1000));
+        i2c_master_write_read_device(m_port, m_dev_addr, &reg_addr, 1, &rxBuf, 1, pdMS_TO_TICKS(1000));
 
         return rxBuf;
     }
 
-    int I2C::writeRegister(uint8_t dev_addr, uint8_t reg_addr, uint8_t txData) {
+    int I2C::writeRegister(uint8_t reg_addr, uint8_t txData) {
         const uint8_t txBuf[2] {reg_addr, txData};
-        return i2c_master_write_to_device(m_port, dev_addr, txBuf, 2, pdMS_TO_TICKS(1000));
+        return i2c_master_write_to_device(m_port, m_dev_addr, txBuf, 2, pdMS_TO_TICKS(1000));
     }
 
-    int I2C::readRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *rx_data, int length) {
-        return i2c_master_write_read_device(m_port, dev_addr, &reg_addr, 1, rx_data, length, pdMS_TO_TICKS(1000));
+    int I2C::readRegisterMultipleBytes(uint8_t reg_addr, uint8_t *rx_data, int length) {
+        return i2c_master_write_read_device(m_port, m_dev_addr, &reg_addr, 1, rx_data, length, pdMS_TO_TICKS(1000));
     }
 
-    int I2C::writeRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *tx_data, int length) {
+    int I2C::writeRegisterMultipleBytes(uint8_t reg_addr, uint8_t *tx_data, int length) {
         int status = 0;
         uint8_t buffer[I2C_LINK_RECOMMENDED_SIZE(3)] = { 0 };
 
         i2c_cmd_handle_t _handle = i2c_cmd_link_create_static(buffer, sizeof(buffer));
         status |= i2c_master_start(_handle);
-        status |= i2c_master_write_byte(_handle, (dev_addr << 1) | I2C_MASTER_WRITE, true);
+        status |= i2c_master_write_byte(_handle, (m_dev_addr << 1) | I2C_MASTER_WRITE, true);
         status |= i2c_master_write_byte(_handle, reg_addr, true);
         status |= i2c_master_write(_handle, tx_data, length, true);
         status |= i2c_master_stop(_handle);
@@ -54,24 +54,24 @@ namespace MZDK {
     }
 
     int I2C::writeByteData(const uint8_t reg, const uint8_t value) {
-        return writeRegister(m_dev_address, reg, value);
+        return writeRegister(reg, value);
     }
 
     int I2C::readByteData(const uint8_t reg) {
-        return readRegister(m_dev_address, reg);
+        return readRegister(reg);
     }
 
     int I2C::readWordData(const uint8_t reg) {
         uint8_t buff[2];
-        readRegisterMultipleBytes(m_dev_address, reg, buff, 2);
+        readRegisterMultipleBytes(reg, buff, 2);
         return buff[1] << 8 | buff[0];
     }
 
     int I2C::readBlockData(const uint8_t reg, uint8_t *buf, const int length) {
-        return readRegisterMultipleBytes(m_dev_address, reg, buf, length);
+        return readRegisterMultipleBytes(reg, buf, length);
     }
 
     void I2C::initI2cForBme280(const uint8_t dev_addr) {
-        m_dev_address = dev_addr;
+        m_dev_addr = dev_addr;
     }
 } 

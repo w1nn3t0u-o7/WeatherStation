@@ -14,18 +14,18 @@ namespace MZDK {
         i2c_port_t m_port {};
         i2c_mode_t m_mode {};
         i2c_config_t _config {};
-        uint32_t m_clk_speed;
+        uint32_t m_clk_speed {};
 
-        uint8_t m_dev_address{};
+        uint8_t m_dev_addr{};
 
     public:
         I2C(i2c_port_t port, i2c_mode_t mode, int sda_pin = DEFAULT_I2C_SDA_PIN, int scl_pin = DEFAULT_I2C_SCL_PIN, bool sda_pullup_en = false, bool scl_pullup_en = false);
         ~I2C();
 
-        uint8_t readRegister(uint8_t dev_addr, uint8_t reg_addr);        
-        int writeRegister(uint8_t dev_addr, uint8_t reg_addr, uint8_t txData);
-        int readRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *rx_data, int length);
-        int writeRegisterMultipleBytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *tx_data, int length);
+        uint8_t readRegister(uint8_t reg_addr);        
+        int writeRegister(uint8_t reg_addr, uint8_t txData);
+        int readRegisterMultipleBytes(uint8_t reg_addr, uint8_t *rx_data, int length);
+        int writeRegisterMultipleBytes(uint8_t reg_addr, uint8_t *tx_data, int length);
 
         int writeByteData(const uint8_t reg, const uint8_t value) override;
         int readByteData(const uint8_t reg) override;
