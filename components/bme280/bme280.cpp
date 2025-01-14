@@ -1,45 +1,46 @@
 #include "bme280.hpp"
 
 namespace MZDK {
-    BME280::BME280(ComProtocol *com_protocol) : m_com_protocol(com_protocol) {};
-    
     int BME280::getStatus() {
-        return m_com_protocol->readRegister(STATUS);
+        return m_com_protocol->readByteData(STATUS);
     }
 
     int BME280::getCalibrateData() {
-        // Temperature calibration data 
-        dig_t1 = static_cast<unsigned short>(m_com_protocol->read2Registers(0x88));
-        dig_t2 = static_cast<signed short>(m_com_protocol->read2Registers(0x8A));
-        dig_t3 = static_cast<signed short>(m_com_protocol->read2Registers(0x8C));
-        // Pressure calibration data 
-        dig_p1 = static_cast<unsigned short>(m_com_protocol->read2Registers(0x8E));
-        dig_p2 = static_cast<signed short>(m_com_protocol->read2Registers(0x90));
-        dig_p3 = static_cast<signed short>(m_com_protocol->read2Registers(0x92));
-        dig_p4 = static_cast<signed short>(m_com_protocol->read2Registers(0x94));
-        dig_p5 = static_cast<signed short>(m_com_protocol->read2Registers(0x96));
-        dig_p6 = static_cast<signed short>(m_com_protocol->read2Registers(0x98));
-        dig_p7 = static_cast<signed short>(m_com_protocol->read2Registers(0x9A));
-        dig_p8 = static_cast<signed short>(m_com_protocol->read2Registers(0x9C));
-        dig_p9 = static_cast<signed short>(m_com_protocol->read2Registers(0x9E));
-        // Humidity calibration data 
-        dig_h1 = static_cast<unsigned char>(m_com_protocol->readRegister(0xA1));
-        dig_h2 = static_cast<signed short>(m_com_protocol->read2Registers(0xE1));
-        dig_h3 = static_cast<unsigned char>(m_com_protocol->readRegister(0xE3));
-        int8_t digH4Msb = static_cast<int8_t>(m_com_protocol->readRegister(0xE4));
-        int8_t digH4H5Shared = static_cast<int8_t>(m_com_protocol->readRegister(0xE5)); // this register hold parts of the values of dig_H4 and dig_h5
-        int8_t digH5Msb = static_cast<int8_t>(m_com_protocol->readRegister(0xE6));
-        dig_h6 = static_cast<int8_t>(m_com_protocol->readRegister(0xE7));
+        //============================== Temperature Calibration Data ===========================
+        dig_t1 = static_cast<unsigned short>(m_com_protocol->readWordData(0x88));
+        dig_t2 = static_cast<signed short>(m_com_protocol->readWordData(0x8A));
+        dig_t3 = static_cast<signed short>(m_com_protocol->readWordData(0x8C));
+        //=======================================================================================
+        //============================== Pressure Calibration Data ==============================
+        dig_p1 = static_cast<unsigned short>(m_com_protocol->readWordData(0x8E));
+        dig_p2 = static_cast<signed short>(m_com_protocol->readWordData(0x90));
+        dig_p3 = static_cast<signed short>(m_com_protocol->readWordData(0x92));
+        dig_p4 = static_cast<signed short>(m_com_protocol->readWordData(0x94));
+        dig_p5 = static_cast<signed short>(m_com_protocol->readWordData(0x96));
+        dig_p6 = static_cast<signed short>(m_com_protocol->readWordData(0x98));
+        dig_p7 = static_cast<signed short>(m_com_protocol->readWordData(0x9A));
+        dig_p8 = static_cast<signed short>(m_com_protocol->readWordData(0x9C));
+        dig_p9 = static_cast<signed short>(m_com_protocol->readWordData(0x9E));
+        //=======================================================================================
+        //============================== Humidity Calibration Data ==============================
+        dig_h1 = static_cast<unsigned char>(m_com_protocol->readByteData(0xA1));
+        dig_h2 = static_cast<signed short>(m_com_protocol->readWordData(0xE1));
+        dig_h3 = static_cast<unsigned char>(m_com_protocol->readByteData(0xE3));
+        int8_t digH4Msb = static_cast<int8_t>(m_com_protocol->readByteData(0xE4));
+        int8_t digH4H5Shared = static_cast<int8_t>(m_com_protocol->readByteData(0xE5)); // this register hold parts of the values of dig_H4 and dig_h5
+        int8_t digH5Msb = static_cast<int8_t>(m_com_protocol->readByteData(0xE6));
+        dig_h6 = static_cast<int8_t>(m_com_protocol->readByteData(0xE7));
 
         dig_h4 = static_cast<signed short>(digH4Msb << 4 | (digH4H5Shared & 0x0F));        // split and shift the bits appropriately.
         dig_h5 = static_cast<signed short>(digH5Msb << 4 | ((digH4H5Shared & 0xF0) >> 4)); // split and shift the bits appropriately.
+        //=======================================================================================
 
         return 0;
     }
 
     int BME280::getSensorData(m_SensorRawData *resultRaw) {
         int status = ESP_OK;
-        uint8_t result_buf[8];
+        std::unique_ptr<uint8_t[]> buff = std::make_unique<uint8_t[]>(8);
 
         if (m_sensor_mode_value == sensor_forced_mode)
         {
@@ -50,16 +51,16 @@ namespace MZDK {
             }
         }
 
-        status = m_com_protocol->readRegisterMultipleBytes(PRESS_MSB, result_buf, 8);
+        status = m_com_protocol->readBlockData(PRESS_MSB, buff.get(), 8);
 
-        uint8_t press_msb = result_buf[0];
-        uint8_t press_lsb = result_buf[1];
-        uint8_t press_xlsb = result_buf[2];
-        uint8_t temp_msb = result_buf[3];
-        uint8_t temp_lsb = result_buf[4];
-        uint8_t temp_xlsb = result_buf[5];
-        uint8_t hum_msb = result_buf[6];
-        uint8_t hum_lsb = result_buf[7];
+        uint8_t press_msb = buff[0];
+        uint8_t press_lsb = buff[1];
+        uint8_t press_xlsb = buff[2];
+        uint8_t temp_msb = buff[3];
+        uint8_t temp_lsb = buff[4];
+        uint8_t temp_xlsb = buff[5];
+        uint8_t hum_msb = buff[6];
+        uint8_t hum_lsb = buff[7];
 
         resultRaw->m_temperature = temp_msb << 12 | temp_lsb << 4 | temp_xlsb >> 4;
         resultRaw->m_pressure = press_msb << 12 | press_lsb << 4 | press_xlsb >> 4;
@@ -187,34 +188,34 @@ namespace MZDK {
 
         int status = 0;
 
-        status |= m_com_protocol->writeRegister(CONFIG, 0); // Enable SPI 4-wire
+        status |= m_com_protocol->writeByteData(CONFIG, 0); // Enable SPI 4-wire
         status |= getCalibrateData();
-        status |= m_com_protocol->writeRegister(CTRL_HUM, m_humidity_oversampling_value);
-        status |= m_com_protocol->writeRegister(CTRL_MEAS, m_pressure_oversampling_value | m_temperature_oversampling_value | m_sensor_mode_value);
+        status |= m_com_protocol->writeByteData(CTRL_HUM, m_humidity_oversampling_value);
+        status |= m_com_protocol->writeByteData(CTRL_MEAS, m_pressure_oversampling_value | m_temperature_oversampling_value | m_sensor_mode_value);
 
         return status;
     }
 
     int BME280::getDeviceID() {
-        return m_com_protocol->readRegister(ID);
+        return m_com_protocol->readByteData(ID);
     }
 
     int BME280::setConfig(const uint8_t config) {
-        return m_com_protocol->writeRegister(CONFIG, config);
+        return m_com_protocol->writeByteData(CONFIG, config);
     }
 
     int BME280::setConfigStandbyT(const uint8_t standby) {// config bits 7, 6, 5  page 30
-        uint8_t temp = m_com_protocol->readRegister(CONFIG) & 0b00011111;
+        uint8_t temp = m_com_protocol->readByteData(CONFIG) & 0b00011111;
 
-        return m_com_protocol->writeRegister(CONFIG, temp | standby);
+        return m_com_protocol->writeByteData(CONFIG, temp | standby);
     }
 
     int BME280::setConfigFilter(const uint8_t filter) {// config bits 4, 3, 2
-        uint8_t temp = m_com_protocol->readRegister(CONFIG);
+        uint8_t temp = m_com_protocol->readByteData(CONFIG);
         temp = temp & 0b11100011;
         temp = temp | filter << 2;
 
-        return m_com_protocol->writeRegister(CONFIG, temp);
+        return m_com_protocol->writeByteData(CONFIG, temp);
     }
 
     int BME280::setCtrlMeas(const uint8_t ctrl_measure) {
@@ -222,41 +223,41 @@ namespace MZDK {
         m_temperature_oversampling_value = 0 | (ctrl_measure & 0b00011111);
         m_sensor_mode_value = 0 | (ctrl_measure & 0b11111100);
 
-        return m_com_protocol->writeRegister(CTRL_MEAS, ctrl_measure);
+        return m_com_protocol->writeByteData(CTRL_MEAS, ctrl_measure);
     }
 
     int BME280::setTemperatureOversampling(const uint8_t temperature_oversampling) {// ctrl_meas bits 7, 6, 5   page 29
-        uint8_t temp = m_com_protocol->readRegister(CTRL_MEAS) & 0b00011111;
+        uint8_t temp = m_com_protocol->readByteData(CTRL_MEAS) & 0b00011111;
         m_temperature_oversampling_value = temperature_oversampling;
 
-        return m_com_protocol->writeRegister(CTRL_MEAS, temp | temperature_oversampling);
+        return m_com_protocol->writeByteData(CTRL_MEAS, temp | temperature_oversampling);
     }
 
     int BME280::setPressureOversampling(const uint8_t pressure_oversampling) {// ctrl_meas bits 4, 3, 2
-        uint8_t temp = m_com_protocol->readRegister(CTRL_MEAS) & 0b11100011;
+        uint8_t temp = m_com_protocol->readByteData(CTRL_MEAS) & 0b11100011;
         m_pressure_oversampling_value = pressure_oversampling;
 
-        return m_com_protocol->writeRegister(CTRL_MEAS, temp | pressure_oversampling);
+        return m_com_protocol->writeByteData(CTRL_MEAS, temp | pressure_oversampling);
     }
 
     int BME280::setOversampling(const uint8_t temperature_oversampling, const uint8_t pressure_oversampling) {
         m_pressure_oversampling_value = 0 | pressure_oversampling;
         m_temperature_oversampling_value = 0 | temperature_oversampling;
 
-        return m_com_protocol->writeRegister(CTRL_MEAS, temperature_oversampling | pressure_oversampling | m_sensor_mode_value);
+        return m_com_protocol->writeByteData(CTRL_MEAS, temperature_oversampling | pressure_oversampling | m_sensor_mode_value);
     }
 
     int BME280::setMode(const uint8_t mode) {// ctrl_meas bits 1, 0
-        uint8_t temp = m_com_protocol->readRegister(CTRL_MEAS) & 0b11111100;
+        uint8_t temp = m_com_protocol->readByteData(CTRL_MEAS) & 0b11111100;
         m_sensor_mode_value = mode;
 
-        return m_com_protocol->writeRegister(CTRL_MEAS, temp | mode);
+        return m_com_protocol->writeByteData(CTRL_MEAS, temp | mode);
     }
 
     int BME280::setCtrlHum(const int humididty_oversampling) {// ctrl_hum bits 2, 1, 0    page 28
         m_humidity_oversampling_value = humididty_oversampling;
         
-        return m_com_protocol->writeRegister(CTRL_HUM, humididty_oversampling);
+        return m_com_protocol->writeByteData(CTRL_HUM, humididty_oversampling);
     }
 
     int BME280::getAllResults(BME280ResultData *results) {
@@ -310,14 +311,14 @@ namespace MZDK {
     }
 
     bool BME280::statusMeasuringBusy() {// check status (0xF3) bit 3
-        return ((m_com_protocol->readRegister(STATUS) & 8) == 8) ? true : false;
+        return ((m_com_protocol->readByteData(STATUS) & 8) == 8) ? true : false;
     }
 
     bool BME280::imUpdateBusy() {// check status (0xF3) bit 0
-        return ((m_com_protocol->readRegister(STATUS) & 1) == 1) ? true : false;
+        return ((m_com_protocol->readByteData(STATUS) & 1) == 1) ? true : false;
     }
     
     int BME280::reset() {// write 0xB6 into reset (0xE0)
-        return m_com_protocol->writeRegister(RESET, 0xB6);
+        return m_com_protocol->writeByteData(RESET, 0xB6);
     }
 } 

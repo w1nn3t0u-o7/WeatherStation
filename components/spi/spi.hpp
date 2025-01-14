@@ -40,12 +40,15 @@ namespace MZDK
         int getBusSpeed();
         spi_device_handle_t getSpiDeviceHandle();
 
-        uint8_t readRegister(const uint8_t reg_addr) override;
-        int writeRegister(const uint8_t reg_addr, const uint8_t tx_data) override;
-        int writeRegisterMultipleBytes(const uint8_t reg_addr, uint8_t *tx_data, const int length) override;
-        int readRegisterMultipleBytes(const uint8_t reg_addr, uint8_t *rx_data, const int length) override;
+        uint8_t readRegister(const uint8_t reg_addr, const uint8_t command);
+        int writeRegister(const uint8_t reg_addr, const uint8_t reg_data, const uint8_t command);
+        int writeRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command);
+        int readRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command);
 
-        int read2Registers(const uint8_t reg_addr) override;
+        int writeByteData(const uint8_t reg, const uint8_t value) override;
+        int readByteData(const uint8_t reg) override;
+        int readWordData(const uint8_t reg) override;
+        int readBlockData(const uint8_t reg, uint8_t *buf, const int length) override;
 
         int initSpiForBme280(const int cs_pin);
     }; 

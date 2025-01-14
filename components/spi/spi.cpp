@@ -72,32 +72,44 @@ namespace MZDK {
         return m_spi_device_handle;
     }
 
-    uint8_t SPI::readRegister(const uint8_t reg_addr) {
-        m_transferByte(reg_addr, 0, SPI_READ);
+    uint8_t SPI::readRegister(const uint8_t reg_addr, const uint8_t command) {
+        m_transferByte(reg_addr, 0, command);
 
         return m_spi_transfer.rx_data[0];
     }
 
-    int SPI::writeRegister(const uint8_t reg_addr, const uint8_t tx_data) {
+    int SPI::writeRegister(const uint8_t reg_addr, const uint8_t reg_data, const uint8_t command) {
         int status = 0;
 
-        status |= m_transferByte(reg_addr, tx_data, SPI_WRITE);
+        status |= m_transferByte(reg_addr, reg_data, command);
 
         return status;
     }
 
-    int SPI::writeRegisterMultipleBytes(const uint8_t reg_addr, uint8_t *tx_data, const int length) {
-        return m_transferMultiplesBytes(reg_addr, tx_data, nullptr, length, SPI_WRITE);
+    int SPI::writeRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command) {
+        return m_transferMultiplesBytes(reg_addr, reg_data_buffer, nullptr, byte_count, command);
     }
 
-    int SPI::readRegisterMultipleBytes(const uint8_t reg_addr, uint8_t *rx_data, const int length) {   
-        return m_transferMultiplesBytes(reg_addr, nullptr, rx_data, length, SPI_READ);
+    int SPI::readRegisterMultipleBytes(const uint8_t reg_addr, uint8_t* reg_data_buffer, const uint8_t byte_count, const uint8_t command) {   
+        return m_transferMultiplesBytes(reg_addr, nullptr, reg_data_buffer, byte_count, command);
     }
 
-    int SPI::read2Registers(const uint8_t reg) {
+    int SPI::writeByteData(const uint8_t reg, const uint8_t value) {
+        return writeRegister(reg, value, SPI_WRITE);
+    }
+
+    int SPI::readByteData(const uint8_t reg) {
+        return readRegister(reg, SPI_READ);
+    }
+
+    int SPI::readWordData(const uint8_t reg) {
         uint8_t buff[2];
-        readRegisterMultipleBytes(reg, buff, 2);
+        readRegisterMultipleBytes(reg, buff, 2, SPI_READ);
         return buff[1] << 8 | buff[0];
+    }
+
+    int SPI::readBlockData(const uint8_t reg, uint8_t *buf, const int length) {
+        return readRegisterMultipleBytes(reg, buf, length, SPI_READ);
     }
 
     int SPI::initSpiForBme280(const int cs) {

@@ -6,9 +6,9 @@
 
 constexpr static int BME280_CS_PIN = 5;
 
-MZDK::I2C i2c(I2C_NUM_0, I2C_MODE_MASTER, 21, 22, true, true);
+MZDK::I2C i2c(I2C_NUM_0, I2C_MODE_MASTER);
 MZDK::SPI spi(SPI3_HOST);
-MZDK::BME280 bme280(&i2c);
+MZDK::BME280 bme280(&spi);
 
 extern "C" void app_main(void) {    
     spi.initSpiForBme280(BME280_CS_PIN);
@@ -27,10 +27,10 @@ extern "C" void app_main(void) {
         Id = bme280.getDeviceID();
         bme280.getAllResults(&Temperature, &Humidity, &Pressure);
         std::cout << "==================================================" << std::endl;
-        std::cout << "Temperature: " << Temperature << "c" << std::endl;
-        std::cout << "Humidity   : " << Humidity << "%" << std::endl;
-        std::cout << "Pressure   : " << Pressure << "Pa" << std::endl;
-        std::cout << "ID         : " << Id << std::endl;
+        std::cout << "SPI Temperature: " << Temperature << "c" << std::endl;
+        std::cout << "SPI Humidity   : " << Humidity << "%" << std::endl;
+        std::cout << "SPI Pressure   : " << Pressure << "Pa" << std::endl;
+        std::cout << "SPI ID         : " << Id << std::endl;
         std::cout << "==================================================" << std::endl;
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
