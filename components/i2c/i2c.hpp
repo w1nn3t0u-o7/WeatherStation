@@ -5,8 +5,8 @@
 #include "com_protocols.hpp"
 
 namespace MZDK {
-    constexpr static int DEFAULT_I2C_SDA_PIN = 17;
-    constexpr static int DEFAULT_I2C_SCL_PIN = 16;
+    constexpr static int DEFAULT_I2C_SDA_PIN = 21;
+    constexpr static int DEFAULT_I2C_SCL_PIN = 22;
     constexpr static uint32_t I2C_CLK_SPEED_HZ = 400000;
 
     class I2C : public ComProtocol {
