@@ -17,8 +17,6 @@ extern "C" void app_main(void) {
     spi.initSpiForBme280(BME280_CS_PIN);
 
     MZDK::BME280 bme280(&i2c); 
-    //bme280.setMode(1);
-    //bme280.setConfigFilter(1);
 
     float Temperature{};
     float Pressure{};
