@@ -106,7 +106,7 @@ namespace MZDK {
         int compensateHumidity(const unsigned long adc_H);
         
     public:
-        BME280(ComProtocol *com_protocol) : m_com_protocol(com_protocol) {};
+        BME280(ComProtocol *com_protocol);
 
         struct BME280ResultData {
             float temperature = 0.0;
