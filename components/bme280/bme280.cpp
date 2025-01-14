@@ -1,7 +1,22 @@
 #include "bme280.hpp"
 
 namespace MZDK {
-    BME280::BME280(ComProtocol *com_protocol) : m_com_protocol(com_protocol) {};
+    BME280::BME280(ComProtocol *com_protocol, 
+                    const uint8_t humidity_oversampling,
+                    const uint8_t temperature_oversampling,
+                    const uint8_t pressure_oversampling,
+                    const uint8_t sensor_mode) 
+                    : m_com_protocol(com_protocol), 
+                    m_humidity_oversampling_value(humidity_oversampling),
+                    m_temperature_oversampling_value(temperature_oversampling),
+                    m_pressure_oversampling_value(pressure_oversampling),
+                    m_sensor_mode_value(sensor_mode) {
+    
+        m_com_protocol->writeRegister(CONFIG, 0); // Enable SPI 4-wire
+        getCalibrateData();
+        m_com_protocol->writeRegister(CTRL_HUM, m_humidity_oversampling_value);
+        m_com_protocol->writeRegister(CTRL_MEAS, m_pressure_oversampling_value | m_temperature_oversampling_value | m_sensor_mode_value);
+    };
     
     int BME280::getStatus() {
         return m_com_protocol->readRegister(STATUS);
@@ -38,7 +53,6 @@ namespace MZDK {
     }
 
     int BME280::getSensorData(m_SensorRawData *resultRaw) {
-        int status = ESP_OK;
         uint8_t result_buf[8];
 
         if (m_sensor_mode_value == sensor_forced_mode)
@@ -50,7 +64,7 @@ namespace MZDK {
             }
         }
 
-        status = m_com_protocol->readRegisterMultipleBytes(PRESS_MSB, result_buf, 8);
+        m_com_protocol->readRegisterMultipleBytes(PRESS_MSB, result_buf, 8);
 
         uint8_t press_msb = result_buf[0];
         uint8_t press_lsb = result_buf[1];
@@ -65,7 +79,7 @@ namespace MZDK {
         resultRaw->m_pressure = press_msb << 12 | press_lsb << 4 | press_xlsb >> 4;
         resultRaw->m_humididty = hum_msb << 8 | hum_lsb;
 
-        return status;
+        return 0;
     }
 
     float BME280::compensateTemp(const signed long adc_T) {
@@ -175,26 +189,6 @@ namespace MZDK {
         return humidity/1024;
     }
 
-    int BME280::init(const uint8_t humidity_oversampling,
-                           const uint8_t temperature_oversampling,
-                           const uint8_t pressure_oversampling,
-                           const uint8_t sensor_mode) {
-
-        m_humidity_oversampling_value = humidity_oversampling;
-        m_pressure_oversampling_value = pressure_oversampling;
-        m_temperature_oversampling_value = temperature_oversampling;
-        m_sensor_mode_value = sensor_mode;
-
-        int status = 0;
-
-        status |= m_com_protocol->writeRegister(CONFIG, 0); // Enable SPI 4-wire
-        status |= getCalibrateData();
-        status |= m_com_protocol->writeRegister(CTRL_HUM, m_humidity_oversampling_value);
-        status |= m_com_protocol->writeRegister(CTRL_MEAS, m_pressure_oversampling_value | m_temperature_oversampling_value | m_sensor_mode_value);
-
-        return status;
-    }
-
     int BME280::getDeviceID() {
         return m_com_protocol->readRegister(ID);
     }
@@ -260,29 +254,27 @@ namespace MZDK {
     }
 
     int BME280::getAllResults(BME280ResultData *results) {
-        int status = ESP_OK;
         m_SensorRawData resultRaw{};
 
-        status = getSensorData(&resultRaw);
+        getSensorData(&resultRaw);
 
         results->temperature = compensateTemp(resultRaw.m_temperature);
         results->humididty = compensateHumidity(resultRaw.m_humididty);
         results->pressure = compensatePressure(resultRaw.m_pressure);
 
-        return status;
+        return 0;
     }
 
     int BME280::getAllResults(float *temperature, int *humidity, float *pressure) {
-        int status = ESP_OK;
         m_SensorRawData result_raw{};
 
-        status = getSensorData(&result_raw);
+        getSensorData(&result_raw);
 
         *temperature = compensateTemp(result_raw.m_temperature);
         *humidity = compensateHumidity(result_raw.m_humididty);
         *pressure = compensatePressure(result_raw.m_pressure);
 
-        return status;
+        return 0;
     }
 
     float BME280::getTemperature() {// Preferable to use GetAllResults()

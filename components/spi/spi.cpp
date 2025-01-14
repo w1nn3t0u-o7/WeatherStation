@@ -45,7 +45,6 @@ namespace MZDK {
     }
 
     int SPI::registerDevice(const uint8_t mode, const int cs, const int addr_length, const int command_length, const int bus_speed) {
-        int status = 0;
 
         m_spi_interface_config = {};
         m_spi_interface_config.command_bits = command_length; 
@@ -55,9 +54,9 @@ namespace MZDK {
         m_spi_interface_config.spics_io_num = cs; 
         m_spi_interface_config.queue_size = 5;
 
-        status |= spi_bus_add_device(m_spi_peripheral, &m_spi_interface_config, &m_spi_device_handle);
+        spi_bus_add_device(m_spi_peripheral, &m_spi_interface_config, &m_spi_device_handle);
 
-        return status;
+        return 0;
     }
 
     void SPI::setBusSpeed(const int bus_speed) {
@@ -79,11 +78,9 @@ namespace MZDK {
     }
 
     int SPI::writeRegister(const uint8_t reg_addr, const uint8_t tx_data) {
-        int status = 0;
+        m_transferByte(reg_addr, tx_data, SPI_WRITE);
 
-        status |= m_transferByte(reg_addr, tx_data, SPI_WRITE);
-
-        return status;
+        return 0;
     }
 
     int SPI::writeRegisterMultipleBytes(const uint8_t reg_addr, uint8_t *tx_data, const int length) {

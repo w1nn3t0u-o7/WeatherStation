@@ -6,17 +6,19 @@
 
 constexpr static int BME280_CS_PIN = 5;
 
-MZDK::I2C i2c(I2C_NUM_0, I2C_MODE_MASTER, 21, 22, true, true);
-MZDK::SPI spi(SPI3_HOST);
-MZDK::BME280 bme280(&i2c);
 
-extern "C" void app_main(void) {    
-    spi.initSpiForBme280(BME280_CS_PIN);
+
+extern "C" void app_main(void) {   
+
+    MZDK::I2C i2c(I2C_NUM_0, I2C_MODE_MASTER, 21, 22, true, true);
     i2c.initI2cForBme280(0x76);
-    
-    bme280.init();
-    bme280.setMode(1);
-    bme280.setConfigFilter(1);
+
+    MZDK::SPI spi(SPI3_HOST);
+    spi.initSpiForBme280(BME280_CS_PIN);
+
+    MZDK::BME280 bme280(&i2c); 
+    //bme280.setMode(1);
+    //bme280.setConfigFilter(1);
 
     float Temperature{};
     float Pressure{};

@@ -73,8 +73,9 @@ namespace MZDK {
         };
 
         uint8_t m_humidity_oversampling_value = humidity_oversampling_X1;    // Default to 1X over sampling
-        uint8_t m_pressure_oversampling_value = pressure_oversampling_X1;    // Default to 1X over sampling
         uint8_t m_temperature_oversampling_value = temperature_oversampling_X1; // Default to 1X over sampling
+        uint8_t m_pressure_oversampling_value = pressure_oversampling_X1;    // Default to 1X over sampling
+        
         uint8_t m_sensor_mode_value = sensor_forced_mode;              // Default to forced mode
 
         // Calibration Data
@@ -106,18 +107,16 @@ namespace MZDK {
         int compensateHumidity(const unsigned long adc_H);
         
     public:
-        BME280(ComProtocol *com_protocol);
+        BME280(ComProtocol *com_protocol, const uint8_t humidity_oversampling = humidity_oversampling_X1,
+                           const uint8_t temperature_oversampling = temperature_oversampling_X1,
+                           const uint8_t pressure_oversampling = pressure_oversampling_X1,
+                           const uint8_t sensor_mode = sensor_forced_mode);
 
         struct BME280ResultData {
             float temperature = 0.0;
             int humididty = 0;
             float pressure = 0.0;
         } results;
-
-        int init(const uint8_t humidity_oversampling = humidity_oversampling_X1,
-                       const uint8_t temperature_oversampling = temperature_oversampling_X1,
-                       const uint8_t pressure_oversampling = pressure_oversampling_X1,
-                       const uint8_t sensor_mode = sensor_forced_mode);
 
         int getDeviceID();
         int setConfig(const uint8_t config);
