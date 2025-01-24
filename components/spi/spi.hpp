@@ -30,6 +30,11 @@ namespace MZDK
     constexpr static int DEFAULT_SPI_SCLK_PIN = 18;
 
     /**
+     * @brief Default CS pin for SPI communication.
+     */
+    constexpr static int BME280_CS_PIN = 5;
+
+    /**
      * @brief Default SPI mode.
      */
     constexpr static uint8_t MODE = 0;
@@ -176,7 +181,7 @@ namespace MZDK
          * @param cs_pin Chip select pin.
          * @return Status of the initialization.
          */
-        int initSpiForBme280(const int cs_pin);
+        int initSpiForBme280(const int cs_pin = BME280_CS_PIN);
     }; 
 }
 

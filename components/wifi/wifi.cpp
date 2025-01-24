@@ -1,17 +1,15 @@
  #include "wifi.hpp"
 
 namespace MZDK {
-    char WIFI::m_mac_addr_cstr[]{};
-    std::mutex WIFI::m_mutx{};
-    WIFI::state WIFI::m_state{state::NOT_INITIALIZED};
+    char WIFI::m_mac_addr_cstr[] {};
+    std::mutex WIFI::m_mutx {};
+    WIFI::state WIFI::m_state = state::NOT_INITIALIZED;
     wifi_init_config_t WIFI::m_wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
-    wifi_config_t WIFI::m_wifi_config{};
+    wifi_config_t WIFI::m_wifi_config {};
 
     WIFI::WIFI() {
-        if (!m_mac_addr_cstr[0])
-        {
-            if (ESP_OK != m_getMac())
-            {
+        if (!m_mac_addr_cstr[0]) {
+            if (m_getMac() != 0) {
                 esp_restart();
             }
         }
@@ -21,33 +19,28 @@ namespace MZDK {
     }
 
     void WIFI::m_wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-        if (WIFI_EVENT == event_base)
-        {
+        if (WIFI_EVENT == event_base) {
             const wifi_event_t event_type{static_cast<wifi_event_t>(event_id)};
 
-            switch (event_type)
-            {
+            switch (event_type) {
             case WIFI_EVENT_STA_START:
             {
                 std::lock_guard<std::mutex> state_guard(m_mutx);
                 m_state = state::READY_TO_CONNECT;
                 break;
             }
-
             case WIFI_EVENT_STA_CONNECTED:
             {
                 std::lock_guard<std::mutex> state_guard(m_mutx);
                 m_state = state::WAITING_FOR_IP;
                 break;
             }
-
             case WIFI_EVENT_STA_DISCONNECTED:
             {
                 std::lock_guard<std::mutex> state_guard(m_mutx);
                 m_state = state::DISCONNECTED;
                 break;
             }
-
             default:
                 break;
             }
@@ -55,29 +48,24 @@ namespace MZDK {
     }
 
     void WIFI::m_ipEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-        if (IP_EVENT == event_base)
-        {
+        if (IP_EVENT == event_base) {
             const ip_event_t event_type{static_cast<ip_event_t>(event_id)};
 
-            switch (event_type)
-            {
+            switch (event_type) {
             case IP_EVENT_STA_GOT_IP:
             {
                 std::lock_guard<std::mutex> state_guard(m_mutx);
                 m_state = state::CONNECTED;
                 break;
             }
-
             case IP_EVENT_STA_LOST_IP:
             {
                 std::lock_guard<std::mutex> state_guard(m_mutx);
-                if (state::DISCONNECTED != m_state)
-                {
+                if (state::DISCONNECTED != m_state) {
                     m_state = state::WAITING_FOR_IP;
                 }
                 break;
             }
-
             default:
                 break;
             }
@@ -87,15 +75,13 @@ namespace MZDK {
     int WIFI::begin() {
         std::lock_guard<std::mutex> connect_guard(m_mutx);
 
-        int status{0};
+        int status = 0;
 
-        switch (m_state)
-        {
+        switch (m_state) {
         case state::READY_TO_CONNECT:
         case state::DISCONNECTED:
             status = esp_wifi_connect();
-            if (ESP_OK == status)
-            {
+            if (status == 0) {
                 m_state = state::CONNECTING;
             }
             break;
@@ -106,7 +92,7 @@ namespace MZDK {
         case state::NOT_INITIALIZED:
         case state::INITIALIZED:
         case state::ERROR:
-            status = ESP_FAIL;
+            status = 1;
             break;
         }
         return status;
@@ -115,28 +101,23 @@ namespace MZDK {
     int WIFI::m_init() {
         std::lock_guard<std::mutex> mutx_guard(m_mutx);
 
-        int status{0};
+        int status = 0;
 
-        if (state::NOT_INITIALIZED == m_state)
-        {
+        if (state::NOT_INITIALIZED == m_state) {
             status |= esp_netif_init();
-            if (0 == status)
-            {
+            if (status == 0) {
                 const esp_netif_t *const p_netif = esp_netif_create_default_wifi_sta();
 
-                if (!p_netif)
-                {
+                if (!p_netif) {
                     status = 1;
                 }
             }
 
-            if (0 == status)
-            {
+            if (status == 0) {
                 status = esp_wifi_init(&m_wifi_init_config);
             }
 
-            if (0 == status)
-            {
+            if (status == 0) {
                 status = esp_event_handler_instance_register(WIFI_EVENT,
                                                              ESP_EVENT_ANY_ID,
                                                              &m_wifiEventHandler,
@@ -144,8 +125,7 @@ namespace MZDK {
                                                              nullptr);
             }
 
-            if (0 == status)
-            {
+            if (status == 0) {
                 status = esp_event_handler_instance_register(IP_EVENT,
                                                              ESP_EVENT_ANY_ID,
                                                              &m_ipEventHandler,
@@ -153,13 +133,11 @@ namespace MZDK {
                                                              nullptr);
             }
 
-            if (0 == status)
-            {
+            if (status == 0) {
                 status = esp_wifi_set_mode(WIFI_MODE_STA);
             }
 
-            if (0 == status)
-            {
+            if (status == 0) {
                 m_wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
                 m_wifi_config.sta.pmf_cfg.capable = true;
                 m_wifi_config.sta.pmf_cfg.required = false;
@@ -167,22 +145,16 @@ namespace MZDK {
                 status = esp_wifi_set_config(WIFI_IF_STA, &m_wifi_config);
             }
 
-            if (0 == status)
-            {
+            if (status == 0) {
                 status = esp_wifi_start(); // start Wifi
             }
 
-            if (0 == status)
-            {
+            if (status == 0) {
                 m_state = state::INITIALIZED;
             }
-        }
-
-        else if (state::ERROR == m_state)
-        {
+        } else if (state::ERROR == m_state) {
             m_state = state::NOT_INITIALIZED;
         }
-
         return status;
     }
 
@@ -198,11 +170,11 @@ namespace MZDK {
 
     // Get default MAC from API and convert to ASCII HEX
     int WIFI::m_getMac() {
-        uint8_t mac_byte_buffer[6]{};
+        uint8_t mac_byte_buffer[6] {};
 
-        const int status{esp_efuse_mac_get_default(mac_byte_buffer)};
+        const int status = esp_efuse_mac_get_default(mac_byte_buffer);
 
-        if (0 == status) {
+        if (status == 0) {
             snprintf(m_mac_addr_cstr, sizeof(m_mac_addr_cstr), "%02X%02X%02X%02X%02X%02X",
                      mac_byte_buffer[0],
                      mac_byte_buffer[1],
@@ -211,7 +183,6 @@ namespace MZDK {
                      mac_byte_buffer[4],
                      mac_byte_buffer[5]);
         }
-
         return status;
     }
 } 

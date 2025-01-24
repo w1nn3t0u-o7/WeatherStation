@@ -47,7 +47,7 @@ namespace MZDK {
         int init();
         int begin();
 
-        constexpr static const state &getState(void) { return m_state; }
-        constexpr static const char *getMac(void) { return m_mac_addr_cstr; }
+        constexpr static const state &getState() {return m_state;}
+        constexpr static const char *getMac() {return m_mac_addr_cstr;}
     }; 
 }
