@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 
 #include "wifi.hpp"
+#include "tcp_server.hpp"
 
 namespace MZDK {
     void connectToWifi(WIFI *wifi) {
