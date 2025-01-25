@@ -5,6 +5,8 @@ extern "C" void app_main(void) {
     wifi.setCredentials("MidgetSpinner", "MiKi0987");
     wifi.init();
 
+    MZDK::SNTP sntp;
+
     float Temperature{};
     float Pressure{};
     int Humidity{};
@@ -20,7 +22,7 @@ extern "C" void app_main(void) {
 
     while(true) {
         if (wifi.getState() != MZDK::WIFI::state::CONNECTED) {
-            MZDK::connectToWifi(&wifi);
+            MZDK::connectToWifi(&wifi, &sntp);
             vTaskDelay(pdMS_TO_TICKS(100));
         } else {
             Id = bme280.getDeviceID();

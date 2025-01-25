@@ -4,10 +4,12 @@
 #include "i2c.hpp"
 #include "bme280.hpp"
 #include "wifi.hpp"
+#include "sntp.hpp"
 
 namespace MZDK {
-    void connectToWifi(WIFI *wifi) {
+    void connectToWifi(WIFI *wifi, SNTP *sntp) {
         MZDK::WIFI::state wifi_state = wifi->getState();
+        bool sntp_initialized = sntp->sntpState();
 
         switch (wifi_state) {
         case MZDK::WIFI::state::READY_TO_CONNECT:
@@ -29,6 +31,9 @@ namespace MZDK {
             break;
         case MZDK::WIFI::state::CONNECTED:
             std::cout << "Wifi Status: CONNECTED\n";
+            if (!sntp_initialized) {
+                sntp->init();
+            }
             break;
         case MZDK::WIFI::state::NOT_INITIALIZED:
             std::cout << "Wifi Status: NOT_INITIALIZED\n";
