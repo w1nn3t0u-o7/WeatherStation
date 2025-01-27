@@ -11,8 +11,7 @@
 #define MAXLINE 1024
 #define PORT 12345
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     int sockfd;
     struct sockaddr_in servaddr;
     char recvline[MAXLINE + 1];
