@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #define MAXLINE 1024
+#define PORT 12345
 
 int main(int argc, char **argv)
 {
@@ -29,7 +30,7 @@ int main(int argc, char **argv)
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(13); /* Port number should match the server */
+    servaddr.sin_port = htons(PORT); /* Port number should match the server */
 
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
         fprintf(stderr, "inet_pton error for %s\n", argv[1]);
