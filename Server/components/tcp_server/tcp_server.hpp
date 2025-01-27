@@ -1,11 +1,3 @@
-/* BSD Socket API Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <string.h>
 #include <sys/param.h>
 #include "freertos/FreeRTOS.h"
@@ -37,9 +29,9 @@ static void tcp_server_task(void *pvParameters) {
     char buff[MAXLINE], str[INET_ADDRSTRLEN + 1];
     struct sockaddr_in servaddr, cliaddr;
     socklen_t clilen;
-    int temp = 17;       // The temperature value to send
-    float humidity = 31.2;  // The humidity value to send
-    float pressure = 40.5;  // The pressure value to send
+    float temp = 0.0;       // The temperature value to send
+    float pressure = 0.0;  // The pressure value to send
+    int humidity = 0;  // The humidity value to send
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
@@ -80,39 +72,41 @@ static void tcp_server_task(void *pvParameters) {
     ESP_LOGI(TAG, "Socket listening");
 
     while (true) {
-        rset = allset;  // Copy the master set
-        nready = select(maxfd + 1, &rset, NULL, NULL, NULL);  // Wait for an event
+        rset = allset;
+        nready = select(maxfd + 1, &rset, NULL, NULL, NULL);
 
         if (nready < 0) {
             fprintf(stderr, "select error: %s\n", strerror(errno));
             exit(1);
         }
 
-        // Check for new connection
+        // Handle new connections
         if (FD_ISSET(listenfd, &rset)) {
             clilen = sizeof(cliaddr);
             connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
+
             if (connfd < 0) {
-                ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
-                break;
+                fprintf(stderr, "accept error: %s\n", strerror(errno));
+                continue;
             }
 
-            // Convert ip address to string
             bzero(str, sizeof(str));
             inet_ntop(AF_INET, &cliaddr.sin_addr, str, sizeof(str));
-            ESP_LOGI(TAG, "Socket accepted ip address: %s", str);
+            printf("New connection from %s\n", str);
 
-            // Send the temperature, humidity, and pressure to the new client immediately
-            snprintf(buff, sizeof(buff), "Temperature: %dÂ°C\r\nHumidity: %.1f%%\r\nPressure: %.1f hPa\r\n", temp, humidity, pressure);
+            // Send the current sensor data immediately after connection
+            snprintf(buff, sizeof(buff), "Temperature: %.2f°C\r\nHumidity: %d%%\r\nPressure: %.1f hPa\r\n",
+                     temp, humidity, pressure);
             if (write(connfd, buff, strlen(buff)) < 0) {
                 fprintf(stderr, "write error: %s\n", strerror(errno));
                 close(connfd);
                 continue;
             }
 
+            // Add the new client to the client array
             for (i = 0; i < FD_SETSIZE; i++) {
                 if (client[i] < 0) {
-                    client[i] = connfd;  // Save the socket
+                    client[i] = connfd;
                     break;
                 }
             }
@@ -123,28 +117,56 @@ static void tcp_server_task(void *pvParameters) {
                 continue;
             }
 
-            FD_SET(connfd, &allset);  // Add the new connection to the set
-            if (connfd > maxfd) maxfd = connfd;  // Update maxfd
-            if (--nready <= 0) continue;  // No more descriptors ready
+            FD_SET(connfd, &allset);
+            if (connfd > maxfd) maxfd = connfd;
+            if (--nready <= 0) continue;
         }
 
-        // Check all clients for data
+        // Handle data from clients
         for (i = 0; i < FD_SETSIZE; i++) {
             if ((sockfd = client[i]) < 0) continue;
 
             if (FD_ISSET(sockfd, &rset)) {
-                if (read(sockfd, buff, MAXLINE) == 0) {
+                int n = read(sockfd, buff, MAXLINE);
+
+                if (n == 0) {
                     // Client disconnected
                     printf("Client disconnected\n");
                     close(sockfd);
                     FD_CLR(sockfd, &allset);
                     client[i] = -1;
+                } else {
+                    buff[n] = 0;
+
+                    // Parse the received data (expected format: temp humidity pressure)
+                    float new_temp, new_pressure;
+                    int new_humidity;
+                    if (sscanf(buff, "%f %d %f", &new_temp, &new_humidity, &new_pressure) == 3) {
+                        // Update the shared sensor values
+                        temp = new_temp;
+                        humidity = new_humidity;
+                        pressure = new_pressure;
+                        printf("Updated values: Temp=%.2f, Humidity=%d, Pressure=%.1f\n",
+                               temp, humidity, pressure);
+
+                        // Broadcast updated values to all clients
+                        snprintf(buff, sizeof(buff), "Temperature: %.2f°C\r\nHumidity: %d%%\r\nPressure: %.1f hPa\r\n",
+                                 temp, humidity, pressure);
+                        for (int j = 0; j < FD_SETSIZE; j++) {
+                            if (client[j] != -1) {
+                                if (write(client[j], buff, strlen(buff)) < 0) {
+                                    fprintf(stderr, "write error to client: %s\n", strerror(errno));
+                                    close(client[j]);
+                                    FD_CLR(client[j], &allset);
+                                    client[j] = -1;
+                                }
+                            }
+                        }
+                    }
                 }
-                if (--nready <= 0) break;  // No more descriptors ready
+                if (--nready <= 0) break;
             }
         }
-        // shutdown(connfd, 0);
-        // close(connfd);
     }
 
 CLEAN_UP:

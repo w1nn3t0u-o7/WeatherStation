@@ -25,11 +25,10 @@ extern "C" void app_main(void) {
         vTaskDelay(pdMS_TO_TICKS(100));
     }
     
-    tcp_client();
-
     while(true) {
         Id = bme280.getDeviceID();
         bme280.getAllResults(&Temperature, &Humidity, &Pressure);
+        tcp_client(&Temperature, &Humidity, &Pressure);
         std::cout << "==================================================" << std::endl;
         std::cout << "Temperature: " << Temperature << "c" << std::endl;
         std::cout << "Humidity   : " << Humidity << "%" << std::endl;
