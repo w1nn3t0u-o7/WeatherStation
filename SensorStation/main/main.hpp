@@ -5,6 +5,7 @@
 #include "bme280.hpp"
 #include "wifi.hpp"
 #include "sntp.hpp"
+#include "tcp_client.hpp"
 
 namespace MZDK {
     void connectToWifi(WIFI *wifi, SNTP *sntp) {

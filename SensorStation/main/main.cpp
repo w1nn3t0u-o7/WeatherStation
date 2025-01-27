@@ -20,22 +20,24 @@ extern "C" void app_main(void) {
 
     MZDK::BME280 bme280(&i2c);
 
-    while(true) {
-        if (wifi.getState() != MZDK::WIFI::state::CONNECTED) {
-            MZDK::connectToWifi(&wifi, &sntp);
-            vTaskDelay(pdMS_TO_TICKS(100));
-        } else {
-            Id = bme280.getDeviceID();
-            bme280.getAllResults(&Temperature, &Humidity, &Pressure);
-            std::cout << "==================================================" << std::endl;
-            std::cout << "Temperature: " << Temperature << "c" << std::endl;
-            std::cout << "Humidity   : " << Humidity << "%" << std::endl;
-            std::cout << "Pressure   : " << Pressure << "Pa" << std::endl;
-            std::cout << "ID         : " << Id << std::endl;
-            std::cout << "==================================================" << std::endl;
+    while (wifi.getState() != MZDK::WIFI::state::CONNECTED) {
+        MZDK::connectToWifi(&wifi, &sntp);
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    
+    tcp_client();
 
-            vTaskDelay(pdMS_TO_TICKS(10000));
-        }
+    while(true) {
+        Id = bme280.getDeviceID();
+        bme280.getAllResults(&Temperature, &Humidity, &Pressure);
+        std::cout << "==================================================" << std::endl;
+        std::cout << "Temperature: " << Temperature << "c" << std::endl;
+        std::cout << "Humidity   : " << Humidity << "%" << std::endl;
+        std::cout << "Pressure   : " << Pressure << "Pa" << std::endl;
+        std::cout << "ID         : " << Id << std::endl;
+        std::cout << "==================================================" << std::endl;
+
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 

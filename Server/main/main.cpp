@@ -5,8 +5,12 @@ extern "C" void app_main(void) {
     wifi.setCredentials("MidgetSpinner", "MiKi0987");
     wifi.init();
 
-    while(true) {
+    while(wifi.getState() != MZDK::WIFI::state::CONNECTED) {
             MZDK::connectToWifi(&wifi);
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(100));
     }
+    
+    ESP_LOGI(TAG, "Starting TCP server...");
+    xTaskCreate(tcp_server_task, "tcp_server", 4096, (void*)AF_INET, 5, NULL);
 }
+
