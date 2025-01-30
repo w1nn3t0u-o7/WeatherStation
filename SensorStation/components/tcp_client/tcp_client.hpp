@@ -5,6 +5,6 @@
 #define PORT 12345
 #define MAXLINE 1024
 
-void tcpClientBmeData(float *temp, int *hum, float *press, const char *time_now);
+void tcpClientBmeData(float *temp, int *hum, float *press);
 
 

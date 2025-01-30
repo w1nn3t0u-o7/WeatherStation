@@ -2,7 +2,7 @@
 
 static const char *TAG = "TCP_CLIENT";
 
-void tcpClientBmeData(float *temp, int *hum, float *press, const char *time_now) {
+void tcpClientBmeData(float *temp, int *hum, float *press) {
     int sock_fd;
     struct sockaddr_in serv_addr;
     char recv_line[MAXLINE + 1], send_line[MAXLINE];
@@ -33,14 +33,14 @@ void tcpClientBmeData(float *temp, int *hum, float *press, const char *time_now)
     ESP_LOGI(TAG, "Successfully connected");
 
     // Format and send the predefined values
-    snprintf(send_line, sizeof(send_line), "%s %.2f %d %.1f", time_now, bme_temperature, bme_humidity, bme_pressure);
+    snprintf(send_line, sizeof(send_line), "%.2f %d %.1f", bme_temperature, bme_humidity, bme_pressure);
 
     if (send(sock_fd, send_line, strlen(send_line), 0) < 0) {
         ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
         exit(1);
     }
 
-    ESP_LOGI(TAG, "Sent to server: Time=%s, Temperature=%.2f, Humidity=%d, Pressure=%.1f\n", time_now, bme_temperature, bme_humidity, bme_pressure);
+    ESP_LOGI(TAG, "Sent to server: Temperature=%.2f, Humidity=%d, Pressure=%.1f\n", bme_temperature, bme_humidity, bme_pressure);
 
     int len = recv(sock_fd, recv_line, MAXLINE, 0);
     // Error occurred during receiving

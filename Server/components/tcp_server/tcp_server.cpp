@@ -12,7 +12,6 @@ void tcp_server_task(void *pvParameters) {
     float bme_temperature = 0.0;       // The temperature value to send
     float bme_pressure = 0.0;  // The pressure value to send
     int bme_humidity = 0;  // The humidity value to send
-    char bme_time[64] {};
 
     bzero(&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -76,8 +75,8 @@ void tcp_server_task(void *pvParameters) {
             ESP_LOGI(TAG, "New connection from %s", str);
 
             // Send the current sensor data immediately after connection
-            snprintf(buff, sizeof(buff), "Time&Date: %63s\r\nTemperature: %.2f°C\r\nHumidity: %d%%\r\nPressure: %.1f Pa\r\n",
-                     bme_time, bme_temperature, bme_humidity, bme_pressure);
+            snprintf(buff, sizeof(buff), "Temperature: %.2f°C\r\nHumidity: %d%%\r\nPressure: %.1f Pa\r\n",
+                     bme_temperature, bme_humidity, bme_pressure);
             if (write(conn_fd, buff, strlen(buff)) < 0) {
                 ESP_LOGE(TAG, "write error: %s", strerror(errno));
                 close(conn_fd);
@@ -129,19 +128,17 @@ void tcp_server_task(void *pvParameters) {
                     // Parse the received data (expected format: temp humidity pressure)
                     float new_temp, new_pressure;
                     int new_humidity;
-                    char new_time[64] {};
-                    if (sscanf(buff, "%63s %f %d %f", new_time, &new_temp, &new_humidity, &new_pressure) == 4) {
+                    if (sscanf(buff, "%f %d %f", &new_temp, &new_humidity, &new_pressure) == 3) {
                         // Update the shared sensor values
-                        strncpy(bme_time, new_time, sizeof(bme_time));
                         bme_temperature = new_temp;
                         bme_humidity = new_humidity;
                         bme_pressure = new_pressure;
-                        ESP_LOGI(TAG, "Updated values: Time&Date:%s, Temp=%.2f, Humidity=%d, Pressure=%.1f",
-                               bme_time, bme_temperature, bme_humidity, bme_pressure);
+                        ESP_LOGI(TAG, "Updated values: Temp=%.2f, Humidity=%d, Pressure=%.1f",
+                               bme_temperature, bme_humidity, bme_pressure);
 
                         // Broadcast updated values to all clients
-                        snprintf(buff, sizeof(buff), "Time: %63s\r\nTemperature: %.2f°C\r\nHumidity: %d%%\r\nPressure: %.1f Pa\r\n",
-                                 bme_time, bme_temperature, bme_humidity, bme_pressure);
+                        snprintf(buff, sizeof(buff), "Temperature: %.2f°C\r\nHumidity: %d%%\r\nPressure: %.1f Pa\r\n",
+                                 bme_temperature, bme_humidity, bme_pressure);
 
                         for (int j = 0; j < FD_SETSIZE; j++) {
                             if (client[j] != -1) {

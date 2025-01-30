@@ -27,7 +27,7 @@ extern "C" void app_main(void) {
     sntp.init();
 
     while(true) {
-        const char *time_now = sntp.timeNowAscii();
+        //const char *time_now = sntp.timeNowAscii();
 
         Id = bme280.getDeviceID();
         bme280.getAllResults(&Temperature, &Humidity, &Pressure);
@@ -38,7 +38,7 @@ extern "C" void app_main(void) {
         std::cout << "ID         : " << Id << std::endl;
         std::cout << "==================================================" << std::endl;
         
-        tcpClientBmeData(&Temperature, &Humidity, &Pressure, time_now);
+        tcpClientBmeData(&Temperature, &Humidity, &Pressure);
 
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
