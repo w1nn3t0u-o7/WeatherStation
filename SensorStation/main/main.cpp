@@ -24,17 +24,21 @@ extern "C" void app_main(void) {
         MZDK::connectToWifi(&wifi, &sntp);
         vTaskDelay(pdMS_TO_TICKS(100));
     }
-    
+    sntp.init();
+
     while(true) {
+        const char *time_now = sntp.timeNowAscii();
+
         Id = bme280.getDeviceID();
         bme280.getAllResults(&Temperature, &Humidity, &Pressure);
-        tcp_client(&Temperature, &Humidity, &Pressure);
         std::cout << "==================================================" << std::endl;
         std::cout << "Temperature: " << Temperature << "c" << std::endl;
         std::cout << "Humidity   : " << Humidity << "%" << std::endl;
         std::cout << "Pressure   : " << Pressure << "Pa" << std::endl;
         std::cout << "ID         : " << Id << std::endl;
         std::cout << "==================================================" << std::endl;
+        
+        tcpClientBmeData(&Temperature, &Humidity, &Pressure, time_now);
 
         vTaskDelay(pdMS_TO_TICKS(10000));
     }

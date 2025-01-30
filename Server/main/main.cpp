@@ -10,7 +10,6 @@ extern "C" void app_main(void) {
             vTaskDelay(pdMS_TO_TICKS(100));
     }
 
-    ESP_LOGI(TAG, "Starting TCP server...");
     xTaskCreate(tcp_server_task, "tcp_server", 8192, (void*)AF_INET, 5, NULL);
 }
 
